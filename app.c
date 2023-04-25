@@ -92,6 +92,37 @@ get_window_size(u32 *rows, u32 *cols)
 	*rows = ws.ws_row;
 }
 
+typedef struct {
+	char *p;
+	usize length;
+	usize capacity;
+} OutputBuffer;
+
+static OutputBuffer
+OutputBuffer_Create(usize capacity)
+{
+	return (OutputBuffer){.p = calloc(capacity, 1),
+	                      .length = 0,
+	                      .capacity = capacity};
+}
+
+static void
+OutputBuffer_Clear(OutputBuffer *b)
+{
+	b->length = 0;
+}
+
+static void
+OutputBuffer_Push(OutputBuffer *b, const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	usize remaining = b->capacity - b->length;
+	usize bytes_written = vsnprintf(b->p + b->length, remaining, fmt, ap);
+	b->length += bytes_written;
+	va_end(ap);
+}
+
 void
 run(void)
 {
@@ -103,27 +134,36 @@ run(void)
 	u32 cols = 0;
 	get_window_size(&rows, &cols);
 
+	OutputBuffer buf = OutputBuffer_Create(rows * cols);
+
 	u64 second_ns = 1000000000;
 	u64 target_frame_duration_ns = second_ns / FPS;
 
+	u32 x = 0;
+	u32 y = 10;
+
 	u64 i = 0;
 	for (;;) {
+		OutputBuffer_Clear(&buf);
+
 		u64 frame_start_ns = clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW);
 
 		char c;
 		read(STDIN_FILENO, &c, 1);
 		if (c == 'q')
 			break;
-		printf("\x1b[H");
 
-		for (u32 y = 0; y < rows; y++) {
-			if (y != 0)
-				printf("\r\n");
-			if (y == 0)
-				printf("frame %llu", i);
-			if (y == 1)
-				printf("read '%c' %d", c, c);
-		}
+		OutputBuffer_Push(&buf, "\x1b[2J");
+		OutputBuffer_Push(&buf, "\x1b[H");
+		OutputBuffer_Push(&buf, "frame %llu\r\n", i);
+		OutputBuffer_Push(&buf, "read '%c' %d", c, c);
+
+		OutputBuffer_Push(&buf, "\x1b[%u;%uH", y + 1, x + 1);
+		OutputBuffer_Push(&buf, "x", 1);
+
+		write(STDOUT_FILENO, buf.p, buf.length);
+
+		x++;
 
 		u64 frame_end_ns = clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW);
 		u64 frame_duration_ns = frame_end_ns - frame_start_ns;
