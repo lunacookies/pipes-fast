@@ -140,7 +140,7 @@ run(void)
 	u64 target_frame_duration_ns = second_ns / FPS;
 
 	u32 x = 0;
-	u32 y = 10;
+	u32 y = 0;
 
 	u64 i = 0;
 	for (;;) {
@@ -149,9 +149,24 @@ run(void)
 		u64 frame_start_ns = clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW);
 
 		char c;
-		read(STDIN_FILENO, &c, 1);
-		if (c == 'q')
-			break;
+		if (read(STDIN_FILENO, &c, 1) == 1) {
+			if (c == 'q')
+				break;
+			switch (c) {
+			case 'w':
+				y--;
+				break;
+			case 'a':
+				x--;
+				break;
+			case 's':
+				y++;
+				break;
+			case 'd':
+				x++;
+				break;
+			}
+		}
 
 		OutputBuffer_Push(&buf, "\x1b[2J");
 		OutputBuffer_Push(&buf, "\x1b[H");
@@ -162,8 +177,6 @@ run(void)
 		OutputBuffer_Push(&buf, "x", 1);
 
 		write(STDOUT_FILENO, buf.p, buf.length);
-
-		x++;
 
 		u64 frame_end_ns = clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW);
 		u64 frame_duration_ns = frame_end_ns - frame_start_ns;
