@@ -54,4 +54,31 @@ void OutputBuffer_PushBytes(OutputBuffer *b, const char *bytes, usize count);
 
 // app.c
 
-void Run(void);
+typedef enum {
+	Edge_Top,
+	Edge_Bottom,
+	Edge_Left,
+	Edge_Right,
+} Edge;
+
+typedef enum {
+	Direction_Up,
+	Direction_Down,
+	Direction_Left,
+	Direction_Right,
+} Direction;
+
+typedef struct {
+	u32 rows;
+	u32 cols;
+	Rng *rng;
+	OutputBuffer buf;
+	u32 xs[5];
+	u32 ys[5];
+	Direction directions[5];
+	Direction old_directions[5];
+	u64 frame_no;
+} App;
+
+App App_Create(u32 rows, u32 cols, Rng *rng);
+void App_Update(App *app);

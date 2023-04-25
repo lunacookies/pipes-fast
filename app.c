@@ -1,212 +1,164 @@
 #include "all.h"
 
-enum { FPS = 60 };
+static const char pipes[16][3] = {
+        [Direction_Up << 2 | Direction_Up] = "┃",
+        [Direction_Up << 2 | Direction_Left] = "┓",
+        [Direction_Up << 2 | Direction_Right] = "┏",
 
-typedef enum {
-	Edge_Top,
-	Edge_Bottom,
-	Edge_Left,
-	Edge_Right,
-} Edge;
+        [Direction_Down << 2 | Direction_Down] = "┃",
+        [Direction_Down << 2 | Direction_Left] = "┛",
+        [Direction_Down << 2 | Direction_Right] = "┗",
 
-typedef enum {
-	Direction_Up,
-	Direction_Down,
-	Direction_Left,
-	Direction_Right,
-} Direction;
+        [Direction_Left << 2 | Direction_Up] = "┗",
+        [Direction_Left << 2 | Direction_Down] = "┏",
+        [Direction_Left << 2 | Direction_Left] = "━",
 
-void
-Run(void)
+        [Direction_Right << 2 | Direction_Up] = "┛",
+        [Direction_Right << 2 | Direction_Down] = "┓",
+        [Direction_Right << 2 | Direction_Right] = "━",
+};
+
+App
+App_Create(u32 rows, u32 cols, Rng *rng)
 {
-	EnableRawMode();
-	HideCursor();
-	write(STDOUT_FILENO, "\x1b[2J", 4);
-
-	char pipes[16][3] = {
-	        [Direction_Up << 2 | Direction_Up] = "┃",
-	        [Direction_Up << 2 | Direction_Left] = "┓",
-	        [Direction_Up << 2 | Direction_Right] = "┏",
-
-	        [Direction_Down << 2 | Direction_Down] = "┃",
-	        [Direction_Down << 2 | Direction_Left] = "┛",
-	        [Direction_Down << 2 | Direction_Right] = "┗",
-
-	        [Direction_Left << 2 | Direction_Up] = "┗",
-	        [Direction_Left << 2 | Direction_Down] = "┏",
-	        [Direction_Left << 2 | Direction_Left] = "━",
-
-	        [Direction_Right << 2 | Direction_Up] = "┛",
-	        [Direction_Right << 2 | Direction_Down] = "┓",
-	        [Direction_Right << 2 | Direction_Right] = "━",
-	};
-
-	u32 rows = 0;
-	u32 cols = 0;
-	GetWindowSize(&rows, &cols);
-
-	Rng rng = Rng_CreateWithSystemEntropy();
-	OutputBuffer buf = OutputBuffer_Create(rows * cols);
-
-	u64 second_ns = 1000000000;
-	u64 target_frame_duration_ns = second_ns / FPS;
-
-	u32 xs[5] = {0};
-	u32 ys[5] = {0};
-
-	Direction directions[5] = {0};
-	Direction old_directions[5] = {0};
+	App app = {.rows = rows,
+	           .cols = cols,
+	           .rng = rng,
+	           .buf = OutputBuffer_Create(rows * cols),
+	           .xs = {0},
+	           .ys = {0},
+	           .directions = {0},
+	           .old_directions = {0},
+	           .frame_no = 0};
 
 	for (usize i = 0; i < 5; i++) {
-		switch (Rng_Next(&rng) & 3) {
+		switch (Rng_Next(app.rng) & 3) {
 		case Edge_Top:
-			xs[i] = Rng_Next(&rng) % cols;
-			ys[i] = 0;
-			directions[i] = Direction_Down;
+			app.xs[i] = Rng_Next(app.rng) % app.cols;
+			app.ys[i] = 0;
+			app.directions[i] = Direction_Down;
 			break;
 		case Edge_Bottom:
-			xs[i] = Rng_Next(&rng) % cols;
-			ys[i] = rows - 1;
-			directions[i] = Direction_Up;
+			app.xs[i] = Rng_Next(app.rng) % app.cols;
+			app.ys[i] = app.rows - 1;
+			app.directions[i] = Direction_Up;
 			break;
 		case Edge_Left:
-			xs[i] = 0;
-			ys[i] = Rng_Next(&rng) % rows;
-			directions[i] = Direction_Right;
+			app.xs[i] = 0;
+			app.ys[i] = Rng_Next(app.rng) % app.rows;
+			app.directions[i] = Direction_Right;
 			break;
 		case Edge_Right:
-			xs[i] = cols - 1;
-			ys[i] = Rng_Next(&rng) % rows;
-			directions[i] = Direction_Left;
+			app.xs[i] = app.cols - 1;
+			app.ys[i] = Rng_Next(app.rng) % app.rows;
+			app.directions[i] = Direction_Left;
 			break;
 		}
 	}
 
-	memcpy(old_directions, directions, sizeof directions);
+	memcpy(app.old_directions, app.directions, sizeof app.directions);
 
-	u64 frame_no = 0;
-	for (;;) {
-		OutputBuffer_Clear(&buf);
+	return app;
+}
 
-		u64 frame_start_ns = clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW);
+void
+App_Update(App *app)
+{
+	app->frame_no++;
 
-		char c;
-		if (read(STDIN_FILENO, &c, 1) == 1)
-			if (c == 'q')
-				break;
+	OutputBuffer_Clear(&app->buf);
 
-		OutputBuffer_Push(&buf, "\x1b[H");
-		OutputBuffer_Push(&buf, "frame %llu\r\n", frame_no);
-		OutputBuffer_Push(&buf, "read '%c' %d", c, c);
+	OutputBuffer_Push(&app->buf, "\x1b[H");
+	OutputBuffer_Push(&app->buf, "frame %llu\r\n", app->frame_no);
 
-		for (usize i = 0; i < 5; i++) {
-			OutputBuffer_Push(&buf, "\x1b[%u;%uH", ys[i] + 1,
-			                  xs[i] + 1);
+	for (usize i = 0; i < 5; i++) {
+		OutputBuffer_Push(&app->buf, "\x1b[%u;%uH", app->ys[i] + 1,
+		                  app->xs[i] + 1);
 
-			usize index = old_directions[i] << 2 | directions[i];
-			OutputBuffer_PushBytes(&buf, pipes[index], 3);
-		}
-
-		write(STDOUT_FILENO, buf.p, buf.length);
-
-		for (usize i = 0; i < 5; i++) {
-			switch (directions[i]) {
-			case Direction_Up:
-				ys[i]--;
-				break;
-			case Direction_Down:
-				ys[i]++;
-				break;
-			case Direction_Left:
-				xs[i]--;
-				break;
-			case Direction_Right:
-				xs[i]++;
-				break;
-			}
-
-			old_directions[i] = directions[i];
-			if ((Rng_Next(&rng) & 1) == 0) {
-				if ((Rng_Next(&rng) & 1) == 0) {
-					switch (directions[i]) {
-					case Direction_Up:
-						directions[i] = Direction_Left;
-						break;
-					case Direction_Down:
-						directions[i] = Direction_Right;
-						break;
-					case Direction_Left:
-						directions[i] = Direction_Down;
-						break;
-					case Direction_Right:
-						directions[i] = Direction_Up;
-						break;
-					}
-				} else {
-					switch (directions[i]) {
-					case Direction_Up:
-						directions[i] = Direction_Right;
-						break;
-					case Direction_Down:
-						directions[i] = Direction_Left;
-						break;
-					case Direction_Left:
-						directions[i] = Direction_Up;
-						break;
-					case Direction_Right:
-						directions[i] = Direction_Down;
-						break;
-					}
-				}
-			}
-
-			if (xs[i] >= 0 && xs[i] < cols && ys[i] >= 0 &&
-			    ys[i] < rows)
-				continue;
-
-			switch (Rng_Next(&rng) & 3) {
-			case Edge_Top:
-				xs[i] = Rng_Next(&rng) % cols;
-				ys[i] = 0;
-				directions[i] = Direction_Down;
-				old_directions[i] = Direction_Down;
-				break;
-			case Edge_Bottom:
-				xs[i] = Rng_Next(&rng) % cols;
-				ys[i] = rows - 1;
-				directions[i] = Direction_Up;
-				old_directions[i] = Direction_Up;
-				break;
-			case Edge_Left:
-				xs[i] = 0;
-				ys[i] = Rng_Next(&rng) % rows;
-				directions[i] = Direction_Right;
-				old_directions[i] = Direction_Right;
-				break;
-			case Edge_Right:
-				xs[i] = cols - 1;
-				ys[i] = Rng_Next(&rng) % rows;
-				directions[i] = Direction_Left;
-				old_directions[i] = Direction_Left;
-				break;
-			}
-		}
-
-		u64 frame_end_ns = clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW);
-		u64 frame_duration_ns = frame_end_ns - frame_start_ns;
-		if (frame_duration_ns < target_frame_duration_ns) {
-			u64 ns_to_sleep =
-			        target_frame_duration_ns - frame_duration_ns;
-			struct timespec ts = {0, ns_to_sleep};
-			if (nanosleep(&ts, NULL) != 0)
-				Die();
-		}
-
-		frame_no++;
+		usize index = app->old_directions[i] << 2 | app->directions[i];
+		OutputBuffer_PushBytes(&app->buf, pipes[index], 3);
 	}
 
-	printf("\x1b[2J");
-	printf("\x1b[H");
-	DisableRawMode();
-	ShowCursor();
+	for (usize i = 0; i < 5; i++) {
+		switch (app->directions[i]) {
+		case Direction_Up:
+			app->ys[i]--;
+			break;
+		case Direction_Down:
+			app->ys[i]++;
+			break;
+		case Direction_Left:
+			app->xs[i]--;
+			break;
+		case Direction_Right:
+			app->xs[i]++;
+			break;
+		}
+
+		app->old_directions[i] = app->directions[i];
+		if ((Rng_Next(app->rng) & 1) == 0) {
+			if ((Rng_Next(app->rng) & 1) == 0) {
+				switch (app->directions[i]) {
+				case Direction_Up:
+					app->directions[i] = Direction_Left;
+					break;
+				case Direction_Down:
+					app->directions[i] = Direction_Right;
+					break;
+				case Direction_Left:
+					app->directions[i] = Direction_Down;
+					break;
+				case Direction_Right:
+					app->directions[i] = Direction_Up;
+					break;
+				}
+			} else {
+				switch (app->directions[i]) {
+				case Direction_Up:
+					app->directions[i] = Direction_Right;
+					break;
+				case Direction_Down:
+					app->directions[i] = Direction_Left;
+					break;
+				case Direction_Left:
+					app->directions[i] = Direction_Up;
+					break;
+				case Direction_Right:
+					app->directions[i] = Direction_Down;
+					break;
+				}
+			}
+		}
+
+		if (app->xs[i] >= 0 && app->xs[i] < app->cols &&
+		    app->ys[i] >= 0 && app->ys[i] < app->rows)
+			continue;
+
+		switch (Rng_Next(app->rng) & 3) {
+		case Edge_Top:
+			app->xs[i] = Rng_Next(app->rng) % app->cols;
+			app->ys[i] = 0;
+			app->directions[i] = Direction_Down;
+			app->old_directions[i] = Direction_Down;
+			break;
+		case Edge_Bottom:
+			app->xs[i] = Rng_Next(app->rng) % app->cols;
+			app->ys[i] = app->rows - 1;
+			app->directions[i] = Direction_Up;
+			app->old_directions[i] = Direction_Up;
+			break;
+		case Edge_Left:
+			app->xs[i] = 0;
+			app->ys[i] = Rng_Next(app->rng) % app->rows;
+			app->directions[i] = Direction_Right;
+			app->old_directions[i] = Direction_Right;
+			break;
+		case Edge_Right:
+			app->xs[i] = app->cols - 1;
+			app->ys[i] = Rng_Next(app->rng) % app->rows;
+			app->directions[i] = Direction_Left;
+			app->old_directions[i] = Direction_Left;
+			break;
+		}
+	}
 }
