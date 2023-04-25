@@ -30,11 +30,24 @@ enable_raw_mode(void)
 	raw.c_oflag &= ~(OPOST);
 	raw.c_cflag |= (CS8);
 	raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
-	raw.c_cc[VMIN] = 0;
-	raw.c_cc[VTIME] = 1;
+
+	s32 flags = fcntl(STDIN_FILENO, F_GETFL, 0);
+	fcntl(STDIN_FILENO, F_SETFL, flags | O_NONBLOCK);
 
 	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1)
 		die();
+}
+
+static void
+hide_cursor(void)
+{
+	write(STDOUT_FILENO, "\x1b[?25l", 6);
+}
+
+static void
+show_cursor(void)
+{
+	write(STDOUT_FILENO, "\x1b[?25h", 6);
 }
 
 static void
@@ -81,11 +94,35 @@ void
 run(void)
 {
 	enable_raw_mode();
+	hide_cursor();
+	printf("\x1b[2J");
+
 	u32 rows = 0;
 	u32 cols = 0;
 	get_window_size(&rows, &cols);
-	printf("rows: %d\r\ncols: %d\r\n", rows, cols);
-	printf("\x1b[10;10Hhi");
-	printf("\x1b[20;10Hhi");
+
+	u64 i = 0;
+	for (;;) {
+		char c;
+		read(STDIN_FILENO, &c, 1);
+		if (c == 'q')
+			break;
+		printf("\x1b[H");
+
+		for (u32 y = 0; y < rows; y++) {
+			if (y != 0)
+				printf("\r\n");
+			if (y == 0)
+				printf("frame %llu", i);
+			if (y == 1)
+				printf("read '%c' %d", c, c);
+		}
+
+		i++;
+	}
+
+	printf("\x1b[2J");
+	printf("\x1b[H");
 	disable_raw_mode();
+	show_cursor();
 }
