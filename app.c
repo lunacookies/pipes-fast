@@ -5,7 +5,7 @@ enum { FPS = 60 };
 struct termios orig_termios;
 
 static void
-die(void)
+Die(void)
 {
 	write(STDOUT_FILENO, "\x1b[2J", 4);
 	write(STDOUT_FILENO, "\x1b[H", 3);
@@ -14,18 +14,18 @@ die(void)
 }
 
 static void
-disable_raw_mode(void)
+DisableRawMode(void)
 {
 	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios) == -1)
-		die();
+		Die();
 }
 
 static void
-enable_raw_mode(void)
+EnableRawMode(void)
 {
 	if (tcgetattr(STDIN_FILENO, &orig_termios) == -1)
-		die();
-	atexit(disable_raw_mode);
+		Die();
+	atexit(DisableRawMode);
 
 	struct termios raw = orig_termios;
 	raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
@@ -37,26 +37,26 @@ enable_raw_mode(void)
 	fcntl(STDIN_FILENO, F_SETFL, flags | O_NONBLOCK);
 
 	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1)
-		die();
+		Die();
 }
 
 static void
-hide_cursor(void)
+HideCursor(void)
 {
 	write(STDOUT_FILENO, "\x1b[?25l", 6);
 }
 
 static void
-show_cursor(void)
+ShowCursor(void)
 {
 	write(STDOUT_FILENO, "\x1b[?25h", 6);
 }
 
 static void
-get_cursor_position(u32 *rows, u32 *cols)
+GetCursorPosition(u32 *rows, u32 *cols)
 {
 	if (write(STDOUT_FILENO, "\x1b[6n", 4) != 4)
-		die();
+		Die();
 
 	char buf[32];
 	u32 i = 0;
@@ -71,20 +71,20 @@ get_cursor_position(u32 *rows, u32 *cols)
 	buf[i] = '\0';
 
 	if (buf[0] != '\x1b' || buf[1] != '[')
-		die();
+		Die();
 	if (sscanf(&buf[2], "%d;%d", rows, cols) != 2)
-		die();
+		Die();
 }
 
 static void
-get_window_size(u32 *rows, u32 *cols)
+GetWindowSize(u32 *rows, u32 *cols)
 {
 	struct winsize ws;
 
 	if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0) {
 		if (write(STDOUT_FILENO, "\x1b[999;999H", 10) != 10)
-			die();
-		get_cursor_position(rows, cols);
+			Die();
+		GetCursorPosition(rows, cols);
 		return;
 	}
 
@@ -124,15 +124,15 @@ OutputBuffer_Push(OutputBuffer *b, const char *fmt, ...)
 }
 
 void
-run(void)
+Run(void)
 {
-	enable_raw_mode();
-	hide_cursor();
+	EnableRawMode();
+	HideCursor();
 	printf("\x1b[2J");
 
 	u32 rows = 0;
 	u32 cols = 0;
-	get_window_size(&rows, &cols);
+	GetWindowSize(&rows, &cols);
 
 	OutputBuffer buf = OutputBuffer_Create(rows * cols);
 
@@ -140,7 +140,7 @@ run(void)
 	u64 target_frame_duration_ns = second_ns / FPS;
 
 	u32 x = 0;
-	u32 y = 0;
+	u32 y = 5;
 
 	u64 i = 0;
 	for (;;) {
@@ -149,32 +149,17 @@ run(void)
 		u64 frame_start_ns = clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW);
 
 		char c;
-		if (read(STDIN_FILENO, &c, 1) == 1) {
+		if (read(STDIN_FILENO, &c, 1) == 1)
 			if (c == 'q')
 				break;
-			switch (c) {
-			case 'w':
-				y--;
-				break;
-			case 'a':
-				x--;
-				break;
-			case 's':
-				y++;
-				break;
-			case 'd':
-				x++;
-				break;
-			}
-		}
 
-		OutputBuffer_Push(&buf, "\x1b[2J");
 		OutputBuffer_Push(&buf, "\x1b[H");
 		OutputBuffer_Push(&buf, "frame %llu\r\n", i);
 		OutputBuffer_Push(&buf, "read '%c' %d", c, c);
 
 		OutputBuffer_Push(&buf, "\x1b[%u;%uH", y + 1, x + 1);
-		OutputBuffer_Push(&buf, "x", 1);
+		OutputBuffer_Push(&buf, "-", 1);
+		x++;
 
 		write(STDOUT_FILENO, buf.p, buf.length);
 
@@ -185,7 +170,7 @@ run(void)
 			                  frame_duration_ns;
 			struct timespec ts = {0, ns_to_sleep};
 			if (nanosleep(&ts, NULL) != 0)
-				die();
+				Die();
 		}
 
 		i++;
@@ -193,6 +178,6 @@ run(void)
 
 	printf("\x1b[2J");
 	printf("\x1b[H");
-	disable_raw_mode();
-	show_cursor();
+	DisableRawMode();
+	ShowCursor();
 }
