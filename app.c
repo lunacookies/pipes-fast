@@ -8,6 +8,13 @@ typedef struct {
 	usize capacity;
 } OutputBuffer;
 
+typedef enum {
+	Edge_Top,
+	Edge_Bottom,
+	Edge_Left,
+	Edge_Right,
+} Edge;
+
 static OutputBuffer
 OutputBuffer_Create(usize capacity)
 {
@@ -44,13 +51,35 @@ Run(void)
 	u32 cols = 0;
 	GetWindowSize(&rows, &cols);
 
+	Rng rng = Rng_CreateWithSystemEntropy();
 	OutputBuffer buf = OutputBuffer_Create(rows * cols);
 
 	u64 second_ns = 1000000000;
 	u64 target_frame_duration_ns = second_ns / FPS;
 
+	Edge edge = Rng_Next(&rng) & 3;
+
 	u32 x = 0;
-	u32 y = 5;
+	u32 y = 0;
+
+	switch (edge) {
+	case Edge_Top:
+		x = Rng_Next(&rng) % cols;
+		y = 0;
+		break;
+	case Edge_Bottom:
+		x = Rng_Next(&rng) % cols;
+		y = rows - 1;
+		break;
+	case Edge_Left:
+		x = 0;
+		y = Rng_Next(&rng) % rows;
+		break;
+	case Edge_Right:
+		x = cols - 1;
+		y = Rng_Next(&rng) % rows;
+		break;
+	}
 
 	u64 i = 0;
 	for (;;) {
@@ -68,8 +97,27 @@ Run(void)
 		OutputBuffer_Push(&buf, "read '%c' %d", c, c);
 
 		OutputBuffer_Push(&buf, "\x1b[%u;%uH", y + 1, x + 1);
-		OutputBuffer_Push(&buf, "-", 1);
-		x++;
+
+		switch (edge) {
+		case Edge_Top:
+			OutputBuffer_Push(&buf, "|", 1);
+			y++;
+			break;
+		case Edge_Bottom:
+			OutputBuffer_Push(&buf, "|", 1);
+			y--;
+			break;
+		case Edge_Left:
+			OutputBuffer_Push(&buf, "--", 2);
+			x++;
+			x++;
+			break;
+		case Edge_Right:
+			OutputBuffer_Push(&buf, "--", 2);
+			x--;
+			x--;
+			break;
+		}
 
 		write(STDOUT_FILENO, buf.p, buf.length);
 

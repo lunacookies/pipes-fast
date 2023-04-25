@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/ioctl.h>
+#include <sys/random.h>
 #include <termios.h>
 #include <time.h>
 #include <unistd.h>
@@ -26,6 +27,12 @@ void DisableRawMode(void);
 void ShowCursor(void);
 void HideCursor(void);
 void GetWindowSize(u32 *rows, u32 *cols);
+
+// rng.c
+
+typedef struct {
+	u64 s;
+} Rng;
 
 Rng Rng_CreateWithSystemEntropy(void);
 u64 Rng_Next(Rng *rng);
