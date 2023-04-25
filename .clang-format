@@ -2,4 +2,4 @@ UseTab: ForIndentation
 IndentWidth: 8
 ContinuationIndentWidth: 16
 BreakBeforeBraces: Linux
-AlwaysBreakAfterReturnType: All
+AlwaysBreakAfterReturnType: AllDefinitions
