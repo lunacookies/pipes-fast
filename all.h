@@ -18,4 +18,18 @@ typedef int16_t s16;
 typedef int32_t s32;
 typedef int64_t s64;
 
+// terminal.c
+
+void Die(void);
+void EnableRawMode(void);
+void DisableRawMode(void);
+void ShowCursor(void);
+void HideCursor(void);
+void GetWindowSize(u32 *rows, u32 *cols);
+
+Rng Rng_CreateWithSystemEntropy(void);
+u64 Rng_Next(Rng *rng);
+
+// app.c
+
 void Run(void);
