@@ -2,12 +2,6 @@
 
 enum { FPS = 60 };
 
-typedef struct {
-	char *p;
-	usize length;
-	usize capacity;
-} OutputBuffer;
-
 typedef enum {
 	Edge_Top,
 	Edge_Bottom,
@@ -21,38 +15,6 @@ typedef enum {
 	Direction_Left,
 	Direction_Right,
 } Direction;
-
-static OutputBuffer
-OutputBuffer_Create(usize capacity)
-{
-	return (OutputBuffer){
-	        .p = calloc(capacity, 1), .length = 0, .capacity = capacity};
-}
-
-static void
-OutputBuffer_Clear(OutputBuffer *b)
-{
-	b->length = 0;
-}
-
-static void
-OutputBuffer_Push(OutputBuffer *b, const char *fmt, ...)
-{
-	va_list ap;
-	va_start(ap, fmt);
-	usize remaining = b->capacity - b->length;
-	usize bytes_written = vsnprintf(b->p + b->length, remaining, fmt, ap);
-	b->length += bytes_written;
-	va_end(ap);
-}
-
-static void
-OutputBuffer_PushBytes(OutputBuffer *b, const char *bytes, usize count)
-{
-	assert(b->length + count < b->capacity);
-	memcpy(b->p + b->length, bytes, count);
-	b->length += count;
-}
 
 void
 Run(void)

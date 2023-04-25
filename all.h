@@ -39,6 +39,19 @@ typedef struct {
 Rng Rng_CreateWithSystemEntropy(void);
 u64 Rng_Next(Rng *rng);
 
+// output_buffer.c
+
+typedef struct {
+	char *p;
+	usize length;
+	usize capacity;
+} OutputBuffer;
+
+OutputBuffer OutputBuffer_Create(usize capacity);
+void OutputBuffer_Clear(OutputBuffer *b);
+void OutputBuffer_Push(OutputBuffer *b, const char *fmt, ...);
+void OutputBuffer_PushBytes(OutputBuffer *b, const char *bytes, usize count);
+
 // app.c
 
 void Run(void);
