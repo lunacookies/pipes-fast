@@ -63,9 +63,9 @@ typedef enum {
 
 typedef enum {
 	Direction_Up,
+	Direction_Right,
 	Direction_Down,
 	Direction_Left,
-	Direction_Right,
 } Direction;
 
 typedef struct {

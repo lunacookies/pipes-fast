@@ -2,20 +2,24 @@
 
 static const char pipes[16][3] = {
         [Direction_Up << 2 | Direction_Up] = "┃",
-        [Direction_Up << 2 | Direction_Left] = "┓",
         [Direction_Up << 2 | Direction_Right] = "┏",
-
-        [Direction_Down << 2 | Direction_Down] = "┃",
-        [Direction_Down << 2 | Direction_Left] = "┛",
-        [Direction_Down << 2 | Direction_Right] = "┗",
-
-        [Direction_Left << 2 | Direction_Up] = "┗",
-        [Direction_Left << 2 | Direction_Down] = "┏",
-        [Direction_Left << 2 | Direction_Left] = "━",
+        [Direction_Up << 2 | Direction_Down] = {0},
+        [Direction_Up << 2 | Direction_Left] = "┓",
 
         [Direction_Right << 2 | Direction_Up] = "┛",
-        [Direction_Right << 2 | Direction_Down] = "┓",
         [Direction_Right << 2 | Direction_Right] = "━",
+        [Direction_Right << 2 | Direction_Down] = "┓",
+        [Direction_Right << 2 | Direction_Left] = {0},
+
+        [Direction_Down << 2 | Direction_Up] = {0},
+        [Direction_Down << 2 | Direction_Right] = "┗",
+        [Direction_Down << 2 | Direction_Down] = "┃",
+        [Direction_Down << 2 | Direction_Left] = "┛",
+
+        [Direction_Left << 2 | Direction_Up] = "┗",
+        [Direction_Left << 2 | Direction_Right] = {0},
+        [Direction_Left << 2 | Direction_Down] = "┏",
+        [Direction_Left << 2 | Direction_Left] = "━",
 };
 
 App
@@ -96,39 +100,15 @@ App_Update(App *app)
 		}
 
 		app->old_directions[i] = app->directions[i];
-		if ((Rng_Next(app->rng) & 1) == 0) {
-			if ((Rng_Next(app->rng) & 1) == 0) {
-				switch (app->directions[i]) {
-				case Direction_Up:
-					app->directions[i] = Direction_Left;
-					break;
-				case Direction_Down:
-					app->directions[i] = Direction_Right;
-					break;
-				case Direction_Left:
-					app->directions[i] = Direction_Down;
-					break;
-				case Direction_Right:
-					app->directions[i] = Direction_Up;
-					break;
-				}
-			} else {
-				switch (app->directions[i]) {
-				case Direction_Up:
-					app->directions[i] = Direction_Right;
-					break;
-				case Direction_Down:
-					app->directions[i] = Direction_Left;
-					break;
-				case Direction_Left:
-					app->directions[i] = Direction_Up;
-					break;
-				case Direction_Right:
-					app->directions[i] = Direction_Down;
-					break;
-				}
-			}
-		}
+
+		// either 0 or 1
+		s32 should_apply = (Rng_Next(app->rng) & 1) == 0;
+
+		// either -1 or 1
+		s32 rotation = ((Rng_Next(app->rng) & 1) << 1) - 1;
+
+		app->directions[i] =
+		        (app->directions[i] + rotation * should_apply) & 3;
 
 		if (app->xs[i] >= 0 && app->xs[i] < app->cols &&
 		    app->ys[i] >= 0 && app->ys[i] < app->rows)
