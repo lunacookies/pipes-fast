@@ -72,11 +72,11 @@ typedef struct {
 	u32 rows;
 	u32 cols;
 	Rng *rng;
-	OutputBuffer buf;
 	u32 xs[5];
 	u32 ys[5];
 	Direction directions[5];
 	Direction old_directions[5];
+	char display[5][3];
 } App;
 
 App App_Create(u32 rows, u32 cols, Rng *rng);

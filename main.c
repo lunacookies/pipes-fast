@@ -41,8 +41,8 @@ main(s32 argument_count, const char **arguments)
 	GetWindowSize(&rows, &cols);
 
 	Rng rng = Rng_CreateWithSystemEntropy();
-
 	App app = App_Create(rows, cols, &rng);
+	OutputBuffer buf = OutputBuffer_Create(rows * cols);
 
 	u64 second_ns = 1000000000;
 	u64 target_frame_duration_ns = second_ns / FPS;
@@ -56,7 +56,19 @@ main(s32 argument_count, const char **arguments)
 				break;
 
 		App_Update(&app);
-		write(STDOUT_FILENO, app.buf.p, app.buf.length);
+
+		OutputBuffer_Clear(&buf);
+		OutputBuffer_Push(&buf, "\x1b[H");
+
+		for (usize i = 0; i < 5; i++) {
+			OutputBuffer_Push(&buf, "\x1b[%u;%uH", app.ys[i] + 1,
+			                  app.xs[i] + 1);
+
+			OutputBuffer_PushBytes(&buf, app.display[i],
+			                       sizeof app.display[0]);
+		}
+
+		write(STDOUT_FILENO, buf.p, buf.length);
 
 		u64 frame_end_ns = clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW);
 		u64 frame_duration_ns = frame_end_ns - frame_start_ns;

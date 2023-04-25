@@ -28,11 +28,11 @@ App_Create(u32 rows, u32 cols, Rng *rng)
 	App app = {.rows = rows,
 	           .cols = cols,
 	           .rng = rng,
-	           .buf = OutputBuffer_Create(rows * cols),
 	           .xs = {0},
 	           .ys = {0},
 	           .directions = {0},
-	           .old_directions = {0}};
+	           .old_directions = {0},
+	           .display = {0}};
 
 	for (usize i = 0; i < 5; i++) {
 		switch (Rng_Next(app.rng) & 3) {
@@ -67,18 +67,6 @@ App_Create(u32 rows, u32 cols, Rng *rng)
 void
 App_Update(App *app)
 {
-	OutputBuffer_Clear(&app->buf);
-
-	OutputBuffer_Push(&app->buf, "\x1b[H");
-
-	for (usize i = 0; i < 5; i++) {
-		OutputBuffer_Push(&app->buf, "\x1b[%u;%uH", app->ys[i] + 1,
-		                  app->xs[i] + 1);
-
-		usize index = app->old_directions[i] << 2 | app->directions[i];
-		OutputBuffer_PushBytes(&app->buf, pipes[index], 3);
-	}
-
 	for (usize i = 0; i < 5; i++) {
 		switch (app->directions[i]) {
 		case Direction_Up:
@@ -136,5 +124,10 @@ App_Update(App *app)
 			app->old_directions[i] = Direction_Left;
 			break;
 		}
+	}
+
+	for (usize i = 0; i < 5; i++) {
+		usize index = app->old_directions[i] << 2 | app->directions[i];
+		memcpy(app->display[i], pipes[index], sizeof pipes[0]);
 	}
 }
