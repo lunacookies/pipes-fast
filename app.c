@@ -100,20 +100,20 @@ Run(void)
 
 		switch (edge) {
 		case Edge_Top:
-			OutputBuffer_Push(&buf, "|", 1);
+			OutputBuffer_Push(&buf, "|");
 			y++;
 			break;
 		case Edge_Bottom:
-			OutputBuffer_Push(&buf, "|", 1);
+			OutputBuffer_Push(&buf, "|");
 			y--;
 			break;
 		case Edge_Left:
-			OutputBuffer_Push(&buf, "--", 2);
+			OutputBuffer_Push(&buf, "--");
 			x++;
 			x++;
 			break;
 		case Edge_Right:
-			OutputBuffer_Push(&buf, "--", 2);
+			OutputBuffer_Push(&buf, "--");
 			x--;
 			x--;
 			break;
