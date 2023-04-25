@@ -98,8 +98,8 @@ App_Update(App *app)
 		app->directions[i] =
 		        (app->directions[i] + rotation * should_apply) & 3;
 
-		if (app->xs[i] >= 0 && app->xs[i] < app->cols &&
-		    app->ys[i] >= 0 && app->ys[i] < app->rows)
+		if (app->xs[i] >= 0 & app->xs[i] < app->cols & app->ys[i] >= 0 &
+		    app->ys[i] < app->rows)
 			continue;
 
 		u32 coord = random >> 8;
