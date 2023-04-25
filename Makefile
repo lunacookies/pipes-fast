@@ -2,6 +2,7 @@ CC=clang
 
 CFLAGS=\
 	-std=c11 \
+	-g \
 	-O3 \
 	-flto \
 	-W \
