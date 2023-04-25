@@ -15,6 +15,13 @@ typedef enum {
 	Edge_Right,
 } Edge;
 
+typedef enum {
+	Direction_Up,
+	Direction_Down,
+	Direction_Left,
+	Direction_Right,
+} Direction;
+
 static OutputBuffer
 OutputBuffer_Create(usize capacity)
 {
@@ -62,22 +69,28 @@ Run(void)
 	u32 x = 0;
 	u32 y = 0;
 
+	Direction direction = 0;
+
 	switch (edge) {
 	case Edge_Top:
 		x = Rng_Next(&rng) % cols;
 		y = 0;
+		direction = Direction_Down;
 		break;
 	case Edge_Bottom:
 		x = Rng_Next(&rng) % cols;
 		y = rows - 1;
+		direction = Direction_Up;
 		break;
 	case Edge_Left:
 		x = 0;
 		y = Rng_Next(&rng) % rows;
+		direction = Direction_Right;
 		break;
 	case Edge_Right:
 		x = cols - 1;
 		y = Rng_Next(&rng) % rows;
+		direction = Direction_Left;
 		break;
 	}
 
@@ -98,24 +111,22 @@ Run(void)
 
 		OutputBuffer_Push(&buf, "\x1b[%u;%uH", y + 1, x + 1);
 
-		switch (edge) {
-		case Edge_Top:
-			OutputBuffer_Push(&buf, "|");
-			y++;
-			break;
-		case Edge_Bottom:
+		switch (direction) {
+		case Direction_Up:
 			OutputBuffer_Push(&buf, "|");
 			y--;
 			break;
-		case Edge_Left:
-			OutputBuffer_Push(&buf, "--");
-			x++;
-			x++;
+		case Direction_Down:
+			OutputBuffer_Push(&buf, "|");
+			y++;
 			break;
-		case Edge_Right:
-			OutputBuffer_Push(&buf, "--");
+		case Direction_Left:
+			OutputBuffer_Push(&buf, "-");
 			x--;
-			x--;
+			break;
+		case Direction_Right:
+			OutputBuffer_Push(&buf, "-");
+			x++;
 			break;
 		}
 
