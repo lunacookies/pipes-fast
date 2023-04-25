@@ -8,12 +8,12 @@ bench(void)
 	u64 total_ns = 0;
 	u64 frame_count = 0;
 
-	for (usize i = 0; i < 10000; i++) {
+	for (usize i = 0; i < 10; i++) {
 		Rng rng = Rng_CreateWithSystemEntropy();
-		App app = App_Create(24, 80, &rng);
+		App app = App_Create(1024 * 1024, 24, 80, &rng);
 
 		u64 start_ns = clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW);
-		for (usize j = 0; j < 10000; j++)
+		for (usize j = 0; j < 100; j++)
 			App_Update(&app);
 		u64 end_ns = clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW);
 
@@ -21,7 +21,7 @@ bench(void)
 		frame_count += 10000;
 	}
 
-	printf("%llu nanos / frame\n", total_ns / frame_count);
+	printf("%llu micros / frame\n", total_ns / frame_count / 1000);
 }
 
 int
@@ -41,7 +41,7 @@ main(s32 argument_count, const char **arguments)
 	GetWindowSize(&rows, &cols);
 
 	Rng rng = Rng_CreateWithSystemEntropy();
-	App app = App_Create(rows, cols, &rng);
+	App app = App_Create(10, rows, cols, &rng);
 	OutputBuffer buf = OutputBuffer_Create(rows * cols);
 
 	u64 second_ns = 1000000000;
@@ -60,7 +60,7 @@ main(s32 argument_count, const char **arguments)
 		OutputBuffer_Clear(&buf);
 		OutputBuffer_Push(&buf, "\x1b[H");
 
-		for (usize i = 0; i < 5; i++) {
+		for (usize i = 0; i < app.pipe_count; i++) {
 			OutputBuffer_Push(&buf, "\x1b[%u;%uH", app.ys[i] + 1,
 			                  app.xs[i] + 1);
 
