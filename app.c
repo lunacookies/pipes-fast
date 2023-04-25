@@ -132,6 +132,40 @@ Run(void)
 
 		write(STDOUT_FILENO, buf.p, buf.length);
 
+		if ((Rng_Next(&rng) & 1) == 0) {
+			if ((Rng_Next(&rng) & 1) == 0) {
+				switch (direction) {
+				case Direction_Up:
+					direction = Direction_Left;
+					break;
+				case Direction_Down:
+					direction = Direction_Right;
+					break;
+				case Direction_Left:
+					direction = Direction_Down;
+					break;
+				case Direction_Right:
+					direction = Direction_Up;
+					break;
+				}
+			} else {
+				switch (direction) {
+				case Direction_Up:
+					direction = Direction_Right;
+					break;
+				case Direction_Down:
+					direction = Direction_Left;
+					break;
+				case Direction_Left:
+					direction = Direction_Up;
+					break;
+				case Direction_Right:
+					direction = Direction_Down;
+					break;
+				}
+			}
+		}
+
 		u64 frame_end_ns = clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW);
 		u64 frame_duration_ns = frame_end_ns - frame_start_ns;
 		if (frame_duration_ns < target_frame_duration_ns) {
