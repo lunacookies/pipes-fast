@@ -25,9 +25,8 @@ typedef enum {
 static OutputBuffer
 OutputBuffer_Create(usize capacity)
 {
-	return (OutputBuffer){.p = calloc(capacity, 1),
-	                      .length = 0,
-	                      .capacity = capacity};
+	return (OutputBuffer){
+	        .p = calloc(capacity, 1), .length = 0, .capacity = capacity};
 }
 
 static void
@@ -63,21 +62,21 @@ Run(void)
 	write(STDOUT_FILENO, "\x1b[2J", 4);
 
 	char pipes[16][3] = {
-	                [Direction_Up << 2 | Direction_Up] = "┃",
-	                [Direction_Up << 2 | Direction_Left] = "┓",
-	                [Direction_Up << 2 | Direction_Right] = "┏",
+	        [Direction_Up << 2 | Direction_Up] = "┃",
+	        [Direction_Up << 2 | Direction_Left] = "┓",
+	        [Direction_Up << 2 | Direction_Right] = "┏",
 
-	                [Direction_Down << 2 | Direction_Down] = "┃",
-	                [Direction_Down << 2 | Direction_Left] = "┛",
-	                [Direction_Down << 2 | Direction_Right] = "┗",
+	        [Direction_Down << 2 | Direction_Down] = "┃",
+	        [Direction_Down << 2 | Direction_Left] = "┛",
+	        [Direction_Down << 2 | Direction_Right] = "┗",
 
-	                [Direction_Left << 2 | Direction_Up] = "┗",
-	                [Direction_Left << 2 | Direction_Down] = "┏",
-	                [Direction_Left << 2 | Direction_Left] = "━",
+	        [Direction_Left << 2 | Direction_Up] = "┗",
+	        [Direction_Left << 2 | Direction_Down] = "┏",
+	        [Direction_Left << 2 | Direction_Left] = "━",
 
-	                [Direction_Right << 2 | Direction_Up] = "┛",
-	                [Direction_Right << 2 | Direction_Down] = "┓",
-	                [Direction_Right << 2 | Direction_Right] = "━",
+	        [Direction_Right << 2 | Direction_Up] = "┛",
+	        [Direction_Right << 2 | Direction_Down] = "┓",
+	        [Direction_Right << 2 | Direction_Right] = "━",
 	};
 
 	u32 rows = 0;
@@ -205,8 +204,8 @@ Run(void)
 		u64 frame_end_ns = clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW);
 		u64 frame_duration_ns = frame_end_ns - frame_start_ns;
 		if (frame_duration_ns < target_frame_duration_ns) {
-			u64 ns_to_sleep = target_frame_duration_ns -
-			                  frame_duration_ns;
+			u64 ns_to_sleep =
+			        target_frame_duration_ns - frame_duration_ns;
 			struct timespec ts = {0, ns_to_sleep};
 			if (nanosleep(&ts, NULL) != 0)
 				Die();
