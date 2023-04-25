@@ -70,6 +70,8 @@ void
 App_Update(App *app)
 {
 	for (usize i = 0; i < app->pipe_count; i++) {
+		u32 random = Rng_Next(app->rng);
+
 		switch (app->directions[i]) {
 		case Direction_Up:
 			app->ys[i]--;
@@ -88,10 +90,10 @@ App_Update(App *app)
 		app->old_directions[i] = app->directions[i];
 
 		// either 0 or 1
-		s32 should_apply = (Rng_Next(app->rng) & 1) == 0;
+		s32 should_apply = (random & 1) == 0;
 
 		// either -1 or 1
-		s32 rotation = ((Rng_Next(app->rng) & 1) << 1) - 1;
+		s32 rotation = (random & 2) - 1;
 
 		app->directions[i] =
 		        (app->directions[i] + rotation * should_apply) & 3;
@@ -100,28 +102,29 @@ App_Update(App *app)
 		    app->ys[i] >= 0 && app->ys[i] < app->rows)
 			continue;
 
-		switch (Rng_Next(app->rng) & 3) {
+		u32 coord = random >> 8;
+		switch ((random >> 2) & 3) {
 		case Edge_Top:
-			app->xs[i] = Rng_Next(app->rng) % app->cols;
+			app->xs[i] = coord % app->cols;
 			app->ys[i] = 0;
 			app->directions[i] = Direction_Down;
 			app->old_directions[i] = Direction_Down;
 			break;
 		case Edge_Bottom:
-			app->xs[i] = Rng_Next(app->rng) % app->cols;
+			app->xs[i] = coord % app->cols;
 			app->ys[i] = app->rows - 1;
 			app->directions[i] = Direction_Up;
 			app->old_directions[i] = Direction_Up;
 			break;
 		case Edge_Left:
 			app->xs[i] = 0;
-			app->ys[i] = Rng_Next(app->rng) % app->rows;
+			app->ys[i] = coord % app->rows;
 			app->directions[i] = Direction_Right;
 			app->old_directions[i] = Direction_Right;
 			break;
 		case Edge_Right:
 			app->xs[i] = app->cols - 1;
-			app->ys[i] = Rng_Next(app->rng) % app->rows;
+			app->ys[i] = coord % app->rows;
 			app->directions[i] = Direction_Left;
 			app->old_directions[i] = Direction_Left;
 			break;
