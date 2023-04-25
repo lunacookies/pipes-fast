@@ -77,7 +77,6 @@ typedef struct {
 	u32 ys[5];
 	Direction directions[5];
 	Direction old_directions[5];
-	u64 frame_no;
 } App;
 
 App App_Create(u32 rows, u32 cols, Rng *rng);

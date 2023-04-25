@@ -32,8 +32,7 @@ App_Create(u32 rows, u32 cols, Rng *rng)
 	           .xs = {0},
 	           .ys = {0},
 	           .directions = {0},
-	           .old_directions = {0},
-	           .frame_no = 0};
+	           .old_directions = {0}};
 
 	for (usize i = 0; i < 5; i++) {
 		switch (Rng_Next(app.rng) & 3) {
@@ -68,12 +67,9 @@ App_Create(u32 rows, u32 cols, Rng *rng)
 void
 App_Update(App *app)
 {
-	app->frame_no++;
-
 	OutputBuffer_Clear(&app->buf);
 
 	OutputBuffer_Push(&app->buf, "\x1b[H");
-	OutputBuffer_Push(&app->buf, "frame %llu\r\n", app->frame_no);
 
 	for (usize i = 0; i < 5; i++) {
 		OutputBuffer_Push(&app->buf, "\x1b[%u;%uH", app->ys[i] + 1,
