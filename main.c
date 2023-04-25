@@ -8,17 +8,17 @@ bench(void)
 	u64 total_ns = 0;
 	u64 frame_count = 0;
 
-	for (usize i = 0; i < 1000; i++) {
+	for (usize i = 0; i < 10000; i++) {
 		Rng rng = Rng_CreateWithSystemEntropy();
 		App app = App_Create(24, 80, &rng);
-		for (usize j = 0; j < 10000; j++) {
-			u64 start_ns =
-			        clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW);
+
+		u64 start_ns = clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW);
+		for (usize j = 0; j < 10000; j++)
 			App_Update(&app);
-			u64 end_ns = clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW);
-			total_ns += end_ns - start_ns;
-			frame_count++;
-		}
+		u64 end_ns = clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW);
+
+		total_ns += end_ns - start_ns;
+		frame_count += 10000;
 	}
 
 	printf("%llu nanos / frame\n", total_ns / frame_count);
