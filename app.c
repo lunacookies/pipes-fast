@@ -64,37 +64,41 @@ Run(void)
 	u64 second_ns = 1000000000;
 	u64 target_frame_duration_ns = second_ns / FPS;
 
-	Edge edge = Rng_Next(&rng) & 3;
+	Edge edges[5] = {0};
+	for (usize i = 0; i < 5; i++)
+		edges[i] = Rng_Next(&rng) & 3;
 
-	u32 x = 0;
-	u32 y = 0;
+	u32 xs[5] = {0};
+	u32 ys[5] = {0};
 
-	Direction direction = 0;
+	Direction directions[5] = {0};
 
-	switch (edge) {
-	case Edge_Top:
-		x = Rng_Next(&rng) % cols;
-		y = 0;
-		direction = Direction_Down;
-		break;
-	case Edge_Bottom:
-		x = Rng_Next(&rng) % cols;
-		y = rows - 1;
-		direction = Direction_Up;
-		break;
-	case Edge_Left:
-		x = 0;
-		y = Rng_Next(&rng) % rows;
-		direction = Direction_Right;
-		break;
-	case Edge_Right:
-		x = cols - 1;
-		y = Rng_Next(&rng) % rows;
-		direction = Direction_Left;
-		break;
+	for (usize i = 0; i < 5; i++) {
+		switch (edges[i]) {
+		case Edge_Top:
+			xs[i] = Rng_Next(&rng) % cols;
+			ys[i] = 0;
+			directions[i] = Direction_Down;
+			break;
+		case Edge_Bottom:
+			xs[i] = Rng_Next(&rng) % cols;
+			ys[i] = rows - 1;
+			directions[i] = Direction_Up;
+			break;
+		case Edge_Left:
+			xs[i] = 0;
+			ys[i] = Rng_Next(&rng) % rows;
+			directions[i] = Direction_Right;
+			break;
+		case Edge_Right:
+			xs[i] = cols - 1;
+			ys[i] = Rng_Next(&rng) % rows;
+			directions[i] = Direction_Left;
+			break;
+		}
 	}
 
-	u64 i = 0;
+	u64 frame_no = 0;
 	for (;;) {
 		OutputBuffer_Clear(&buf);
 
@@ -106,62 +110,67 @@ Run(void)
 				break;
 
 		OutputBuffer_Push(&buf, "\x1b[H");
-		OutputBuffer_Push(&buf, "frame %llu\r\n", i);
+		OutputBuffer_Push(&buf, "frame %llu\r\n", frame_no);
 		OutputBuffer_Push(&buf, "read '%c' %d", c, c);
 
-		OutputBuffer_Push(&buf, "\x1b[%u;%uH", y + 1, x + 1);
+		for (usize i = 0; i < 5; i++) {
+			OutputBuffer_Push(&buf, "\x1b[%u;%uH", ys[i] + 1,
+			                  xs[i] + 1);
 
-		switch (direction) {
-		case Direction_Up:
-			OutputBuffer_Push(&buf, "|");
-			y--;
-			break;
-		case Direction_Down:
-			OutputBuffer_Push(&buf, "|");
-			y++;
-			break;
-		case Direction_Left:
-			OutputBuffer_Push(&buf, "-");
-			x--;
-			break;
-		case Direction_Right:
-			OutputBuffer_Push(&buf, "-");
-			x++;
-			break;
+			switch (directions[i]) {
+			case Direction_Up:
+				OutputBuffer_Push(&buf, "|");
+				ys[i]--;
+				break;
+			case Direction_Down:
+				OutputBuffer_Push(&buf, "|");
+				ys[i]++;
+				break;
+			case Direction_Left:
+				OutputBuffer_Push(&buf, "-");
+				xs[i]--;
+				break;
+			case Direction_Right:
+				OutputBuffer_Push(&buf, "-");
+				xs[i]++;
+				break;
+			}
 		}
 
 		write(STDOUT_FILENO, buf.p, buf.length);
 
-		if ((Rng_Next(&rng) & 1) == 0) {
+		for (usize i = 0; i < 5; i++) {
 			if ((Rng_Next(&rng) & 1) == 0) {
-				switch (direction) {
-				case Direction_Up:
-					direction = Direction_Left;
-					break;
-				case Direction_Down:
-					direction = Direction_Right;
-					break;
-				case Direction_Left:
-					direction = Direction_Down;
-					break;
-				case Direction_Right:
-					direction = Direction_Up;
-					break;
-				}
-			} else {
-				switch (direction) {
-				case Direction_Up:
-					direction = Direction_Right;
-					break;
-				case Direction_Down:
-					direction = Direction_Left;
-					break;
-				case Direction_Left:
-					direction = Direction_Up;
-					break;
-				case Direction_Right:
-					direction = Direction_Down;
-					break;
+				if ((Rng_Next(&rng) & 1) == 0) {
+					switch (directions[i]) {
+					case Direction_Up:
+						directions[i] = Direction_Left;
+						break;
+					case Direction_Down:
+						directions[i] = Direction_Right;
+						break;
+					case Direction_Left:
+						directions[i] = Direction_Down;
+						break;
+					case Direction_Right:
+						directions[i] = Direction_Up;
+						break;
+					}
+				} else {
+					switch (directions[i]) {
+					case Direction_Up:
+						directions[i] = Direction_Right;
+						break;
+					case Direction_Down:
+						directions[i] = Direction_Left;
+						break;
+					case Direction_Left:
+						directions[i] = Direction_Up;
+						break;
+					case Direction_Right:
+						directions[i] = Direction_Down;
+						break;
+					}
 				}
 			}
 		}
@@ -176,7 +185,7 @@ Run(void)
 				Die();
 		}
 
-		i++;
+		frame_no++;
 	}
 
 	printf("\x1b[2J");
