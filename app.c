@@ -89,10 +89,6 @@ Run(void)
 	u64 second_ns = 1000000000;
 	u64 target_frame_duration_ns = second_ns / FPS;
 
-	Edge edges[5] = {0};
-	for (usize i = 0; i < 5; i++)
-		edges[i] = Rng_Next(&rng) & 3;
-
 	u32 xs[5] = {0};
 	u32 ys[5] = {0};
 
@@ -100,7 +96,7 @@ Run(void)
 	Direction old_directions[5] = {0};
 
 	for (usize i = 0; i < 5; i++) {
-		switch (edges[i]) {
+		switch (Rng_Next(&rng) & 3) {
 		case Edge_Top:
 			xs[i] = Rng_Next(&rng) % cols;
 			ys[i] = 0;
@@ -124,6 +120,8 @@ Run(void)
 		}
 	}
 
+	memcpy(old_directions, directions, sizeof directions);
+
 	u64 frame_no = 0;
 	for (;;) {
 		OutputBuffer_Clear(&buf);
@@ -145,7 +143,11 @@ Run(void)
 
 			usize index = old_directions[i] << 2 | directions[i];
 			OutputBuffer_PushBytes(&buf, pipes[index], 3);
+		}
 
+		write(STDOUT_FILENO, buf.p, buf.length);
+
+		for (usize i = 0; i < 5; i++) {
 			switch (directions[i]) {
 			case Direction_Up:
 				ys[i]--;
@@ -160,11 +162,7 @@ Run(void)
 				xs[i]++;
 				break;
 			}
-		}
 
-		write(STDOUT_FILENO, buf.p, buf.length);
-
-		for (usize i = 0; i < 5; i++) {
 			old_directions[i] = directions[i];
 			if ((Rng_Next(&rng) & 1) == 0) {
 				if ((Rng_Next(&rng) & 1) == 0) {
@@ -198,6 +196,37 @@ Run(void)
 						break;
 					}
 				}
+			}
+
+			if (xs[i] >= 0 && xs[i] < cols && ys[i] >= 0 &&
+			    ys[i] < rows)
+				continue;
+
+			switch (Rng_Next(&rng) & 3) {
+			case Edge_Top:
+				xs[i] = Rng_Next(&rng) % cols;
+				ys[i] = 0;
+				directions[i] = Direction_Down;
+				old_directions[i] = Direction_Down;
+				break;
+			case Edge_Bottom:
+				xs[i] = Rng_Next(&rng) % cols;
+				ys[i] = rows - 1;
+				directions[i] = Direction_Up;
+				old_directions[i] = Direction_Up;
+				break;
+			case Edge_Left:
+				xs[i] = 0;
+				ys[i] = Rng_Next(&rng) % rows;
+				directions[i] = Direction_Right;
+				old_directions[i] = Direction_Right;
+				break;
+			case Edge_Right:
+				xs[i] = cols - 1;
+				ys[i] = Rng_Next(&rng) % rows;
+				directions[i] = Direction_Left;
+				old_directions[i] = Direction_Left;
+				break;
 			}
 		}
 
