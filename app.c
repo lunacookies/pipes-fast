@@ -1,5 +1,7 @@
 #include "all.h"
 
+enum { FPS = 60 };
+
 struct termios orig_termios;
 
 static void
@@ -101,8 +103,13 @@ run(void)
 	u32 cols = 0;
 	get_window_size(&rows, &cols);
 
+	u64 second_ns = 1000000000;
+	u64 target_frame_duration_ns = second_ns / FPS;
+
 	u64 i = 0;
 	for (;;) {
+		u64 frame_start_ns = clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW);
+
 		char c;
 		read(STDIN_FILENO, &c, 1);
 		if (c == 'q')
@@ -116,6 +123,16 @@ run(void)
 				printf("frame %llu", i);
 			if (y == 1)
 				printf("read '%c' %d", c, c);
+		}
+
+		u64 frame_end_ns = clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW);
+		u64 frame_duration_ns = frame_end_ns - frame_start_ns;
+		if (frame_duration_ns < target_frame_duration_ns) {
+			u64 ns_to_sleep = target_frame_duration_ns -
+			                  frame_duration_ns;
+			struct timespec ts = {0, ns_to_sleep};
+			if (nanosleep(&ts, NULL) != 0)
+				die();
 		}
 
 		i++;

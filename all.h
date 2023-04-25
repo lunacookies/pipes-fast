@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <sys/ioctl.h>
 #include <termios.h>
+#include <time.h>
 #include <unistd.h>
 
 typedef uint8_t u8;
