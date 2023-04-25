@@ -2,9 +2,8 @@ CC=clang
 
 CFLAGS=\
 	-std=c11 \
-	-fsanitize=address \
-	-fsanitize=undefined \
-	-g \
+	-O3 \
+	-flto \
 	-W \
 	-Wall \
 	-Wextra \
@@ -29,8 +28,8 @@ out/%.o: %.c $(HEADERS)
 	@ mkdir -p out
 	@ $(CC) $(CFLAGS) -c -o $@ $<
 
-test: out/pipes-fast
-	@ ./test.sh
+bench: all
+	@ ./out/pipes-fast --bench
 
 tidy: $(HEADERS) $(SOURCES)
 	@ clang-format -i $^

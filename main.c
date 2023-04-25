@@ -2,9 +2,36 @@
 
 enum { FPS = 60 };
 
-int
-main(void)
+static void
+bench(void)
 {
+	u64 total_ns = 0;
+	u64 frame_count = 0;
+
+	for (usize i = 0; i < 1000; i++) {
+		Rng rng = Rng_CreateWithSystemEntropy();
+		App app = App_Create(24, 80, &rng);
+		for (usize j = 0; j < 10000; j++) {
+			u64 start_ns =
+			        clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW);
+			App_Update(&app);
+			u64 end_ns = clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW);
+			total_ns += end_ns - start_ns;
+			frame_count++;
+		}
+	}
+
+	printf("%llu nanos / frame\n", total_ns / frame_count);
+}
+
+int
+main(s32 argument_count, const char **arguments)
+{
+	if (argument_count == 2 && strcmp(arguments[1], "--bench") == 0) {
+		bench();
+		return 0;
+	}
+
 	EnableRawMode();
 	HideCursor();
 	write(STDOUT_FILENO, "\x1b[2J", 4);
