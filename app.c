@@ -79,6 +79,7 @@ App_Update(App *app)
 	u32 *ys = app->ys;
 	Direction *directions = app->directions;
 	Direction *old_directions = app->old_directions;
+	char(*display)[3] = app->display;
 
 	for (usize i = 0; i < pipe_count; i++) {
 		Direction direction = directions[i];
@@ -98,26 +99,27 @@ App_Update(App *app)
 		// either -1 or 1
 		s32 rotation = (random & 2) - 1;
 
-		old_directions[i] = direction;
-		directions[i] = (direction + rotation * should_apply) & 3;
-
-		if (x >= 0 & x < cols & y >= 0 & y < rows)
-			continue;
-
-		u32 coord = random >> 8;
-
-		u32 new_x[4] = {coord % cols, 0, coord % cols, cols - 1};
-		u32 new_y[4] = {rows - 1, coord % rows, 0, coord % rows};
-
-		direction = (random >> 2) & 3;
-		xs[i] = new_x[direction];
-		ys[i] = new_y[direction];
+		Direction old_direction = direction;
+		old_directions[i] = old_direction;
+		direction = (direction + rotation * should_apply) & 3;
 		directions[i] = direction;
-		old_directions[i] = direction;
-	}
 
-	for (usize i = 0; i < pipe_count; i++) {
-		usize index = app->old_directions[i] << 2 | app->directions[i];
-		memcpy(app->display[i], pipes[index], sizeof pipes[0]);
+		if (x < 0 | x >= cols | y < 0 | y >= rows) {
+			u32 coord = random >> 8;
+			u32 new_x[4] = {coord % cols, 0, coord % cols,
+			                cols - 1};
+			u32 new_y[4] = {rows - 1, coord % rows, 0,
+			                coord % rows};
+
+			direction = (random >> 2) & 3;
+			old_direction = direction;
+			xs[i] = new_x[direction];
+			ys[i] = new_y[direction];
+			directions[i] = direction;
+			old_directions[i] = direction;
+		}
+
+		usize index = old_direction << 2 | direction;
+		memcpy(display[i], pipes[index], sizeof pipes[0]);
 	}
 }
