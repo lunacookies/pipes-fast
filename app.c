@@ -105,32 +105,15 @@ App_Update(App *app)
 			continue;
 
 		u32 coord = random >> 8;
-		switch ((random >> 2) & 3) {
-		case Direction_Up:
-			xs[i] = coord % cols;
-			ys[i] = rows - 1;
-			directions[i] = Direction_Up;
-			old_directions[i] = Direction_Up;
-			break;
-		case Direction_Right:
-			xs[i] = 0;
-			ys[i] = coord % rows;
-			directions[i] = Direction_Right;
-			old_directions[i] = Direction_Right;
-			break;
-		case Direction_Down:
-			xs[i] = coord % cols;
-			ys[i] = 0;
-			directions[i] = Direction_Down;
-			old_directions[i] = Direction_Down;
-			break;
-		case Direction_Left:
-			xs[i] = cols - 1;
-			ys[i] = coord % rows;
-			directions[i] = Direction_Left;
-			old_directions[i] = Direction_Left;
-			break;
-		}
+
+		u32 new_x[4] = {coord % cols, 0, coord % cols, cols - 1};
+		u32 new_y[4] = {rows - 1, coord % rows, 0, coord % rows};
+
+		direction = (random >> 2) & 3;
+		xs[i] = new_x[direction];
+		ys[i] = new_y[direction];
+		directions[i] = direction;
+		old_directions[i] = direction;
 	}
 
 	for (usize i = 0; i < pipe_count; i++) {
