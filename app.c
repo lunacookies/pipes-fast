@@ -22,6 +22,9 @@ static const char pipes[16][3] = {
         [Direction_Left << 2 | Direction_Left] = "━",
 };
 
+static const s32 x_deltas[4] = {0, 1, 0, -1};
+static const s32 y_deltas[4] = {-1, 0, 1, 0};
+
 App
 App_Create(u32 pipe_count, u32 rows, u32 cols, Rng *rng)
 {
@@ -70,24 +73,14 @@ void
 App_Update(App *app)
 {
 	for (usize i = 0; i < app->pipe_count; i++) {
-		u32 random = Rng_Next(app->rng);
-
-		switch (app->directions[i]) {
-		case Direction_Up:
-			app->ys[i]--;
-			break;
-		case Direction_Down:
-			app->ys[i]++;
-			break;
-		case Direction_Left:
-			app->xs[i]--;
-			break;
-		case Direction_Right:
-			app->xs[i]++;
-			break;
-		}
+		s32 dx = x_deltas[app->directions[i]];
+		s32 dy = y_deltas[app->directions[i]];
+		app->xs[i] += dx;
+		app->ys[i] += dy;
 
 		app->old_directions[i] = app->directions[i];
+
+		u32 random = Rng_Next(app->rng);
 
 		// either 0 or 1
 		s32 should_apply = (random & 1) == 0;
