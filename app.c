@@ -72,11 +72,19 @@ App_Create(u32 pipe_count, u32 rows, u32 cols, Rng *rng)
 void
 App_Update(App *app)
 {
-	for (usize i = 0; i < app->pipe_count; i++) {
+	u32 pipe_count = app->pipe_count;
+	u32 rows = app->rows;
+	u32 cols = app->cols;
+	u32 *xs = app->xs;
+	u32 *ys = app->ys;
+
+	for (usize i = 0; i < pipe_count; i++) {
 		s32 dx = x_deltas[app->directions[i]];
 		s32 dy = y_deltas[app->directions[i]];
-		app->xs[i] += dx;
-		app->ys[i] += dy;
+		u32 x = xs[i] + dx;
+		u32 y = ys[i] + dy;
+		xs[i] = x;
+		ys[i] = y;
 
 		app->old_directions[i] = app->directions[i];
 
@@ -91,40 +99,39 @@ App_Update(App *app)
 		app->directions[i] =
 		        (app->directions[i] + rotation * should_apply) & 3;
 
-		if (app->xs[i] >= 0 & app->xs[i] < app->cols & app->ys[i] >= 0 &
-		    app->ys[i] < app->rows)
+		if (x >= 0 & x < cols & y >= 0 & y < rows)
 			continue;
 
 		u32 coord = random >> 8;
 		switch ((random >> 2) & 3) {
 		case Edge_Top:
-			app->xs[i] = coord % app->cols;
-			app->ys[i] = 0;
+			xs[i] = coord % cols;
+			ys[i] = 0;
 			app->directions[i] = Direction_Down;
 			app->old_directions[i] = Direction_Down;
 			break;
 		case Edge_Bottom:
-			app->xs[i] = coord % app->cols;
-			app->ys[i] = app->rows - 1;
+			xs[i] = coord % cols;
+			ys[i] = rows - 1;
 			app->directions[i] = Direction_Up;
 			app->old_directions[i] = Direction_Up;
 			break;
 		case Edge_Left:
-			app->xs[i] = 0;
-			app->ys[i] = coord % app->rows;
+			xs[i] = 0;
+			ys[i] = coord % rows;
 			app->directions[i] = Direction_Right;
 			app->old_directions[i] = Direction_Right;
 			break;
 		case Edge_Right:
-			app->xs[i] = app->cols - 1;
-			app->ys[i] = coord % app->rows;
+			xs[i] = cols - 1;
+			ys[i] = coord % rows;
 			app->directions[i] = Direction_Left;
 			app->old_directions[i] = Direction_Left;
 			break;
 		}
 	}
 
-	for (usize i = 0; i < app->pipe_count; i++) {
+	for (usize i = 0; i < pipe_count; i++) {
 		usize index = app->old_directions[i] << 2 | app->directions[i];
 		memcpy(app->display[i], pipes[index], sizeof pipes[0]);
 	}
