@@ -55,13 +55,6 @@ void OutputBuffer_PushBytes(OutputBuffer *b, const char *bytes, usize count);
 // app.c
 
 typedef enum {
-	Edge_Top,
-	Edge_Bottom,
-	Edge_Left,
-	Edge_Right,
-} Edge;
-
-typedef enum {
 	Direction_Up,
 	Direction_Right,
 	Direction_Down,

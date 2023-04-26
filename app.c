@@ -40,22 +40,22 @@ App_Create(u32 pipe_count, u32 rows, u32 cols, Rng *rng)
 
 	for (usize i = 0; i < app.pipe_count; i++) {
 		switch (Rng_Next(app.rng) & 3) {
-		case Edge_Top:
-			app.xs[i] = Rng_Next(app.rng) % app.cols;
-			app.ys[i] = 0;
-			app.directions[i] = Direction_Down;
-			break;
-		case Edge_Bottom:
+		case Direction_Up:
 			app.xs[i] = Rng_Next(app.rng) % app.cols;
 			app.ys[i] = app.rows - 1;
 			app.directions[i] = Direction_Up;
 			break;
-		case Edge_Left:
+		case Direction_Right:
 			app.xs[i] = 0;
 			app.ys[i] = Rng_Next(app.rng) % app.rows;
 			app.directions[i] = Direction_Right;
 			break;
-		case Edge_Right:
+		case Direction_Down:
+			app.xs[i] = Rng_Next(app.rng) % app.cols;
+			app.ys[i] = 0;
+			app.directions[i] = Direction_Down;
+			break;
+		case Direction_Left:
 			app.xs[i] = app.cols - 1;
 			app.ys[i] = Rng_Next(app.rng) % app.rows;
 			app.directions[i] = Direction_Left;
@@ -106,25 +106,25 @@ App_Update(App *app)
 
 		u32 coord = random >> 8;
 		switch ((random >> 2) & 3) {
-		case Edge_Top:
-			xs[i] = coord % cols;
-			ys[i] = 0;
-			directions[i] = Direction_Down;
-			old_directions[i] = Direction_Down;
-			break;
-		case Edge_Bottom:
+		case Direction_Up:
 			xs[i] = coord % cols;
 			ys[i] = rows - 1;
 			directions[i] = Direction_Up;
 			old_directions[i] = Direction_Up;
 			break;
-		case Edge_Left:
+		case Direction_Right:
 			xs[i] = 0;
 			ys[i] = coord % rows;
 			directions[i] = Direction_Right;
 			old_directions[i] = Direction_Right;
 			break;
-		case Edge_Right:
+		case Direction_Down:
+			xs[i] = coord % cols;
+			ys[i] = 0;
+			directions[i] = Direction_Down;
+			old_directions[i] = Direction_Down;
+			break;
+		case Direction_Left:
 			xs[i] = cols - 1;
 			ys[i] = coord % rows;
 			directions[i] = Direction_Left;
