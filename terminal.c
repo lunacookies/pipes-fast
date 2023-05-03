@@ -3,7 +3,7 @@
 struct termios orig_termios;
 
 static void
-GetCursorPosition(u32 *rows, u32 *cols)
+GetCursorPosition(u16 *rows, u16 *cols)
 {
 	if (write(STDOUT_FILENO, "\x1b[6n", 4) != 4)
 		Die();
@@ -22,7 +22,7 @@ GetCursorPosition(u32 *rows, u32 *cols)
 
 	if (buf[0] != '\x1b' || buf[1] != '[')
 		Die();
-	if (sscanf(&buf[2], "%d;%d", rows, cols) != 2)
+	if (sscanf(&buf[2], "%hd;%hd", rows, cols) != 2)
 		Die();
 }
 
@@ -75,7 +75,7 @@ ShowCursor(void)
 }
 
 void
-GetWindowSize(u32 *rows, u32 *cols)
+GetWindowSize(u16 *rows, u16 *cols)
 {
 	struct winsize ws;
 

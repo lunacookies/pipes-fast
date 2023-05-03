@@ -28,7 +28,7 @@ void EnableRawMode(void);
 void DisableRawMode(void);
 void ShowCursor(void);
 void HideCursor(void);
-void GetWindowSize(u32 *rows, u32 *cols);
+void GetWindowSize(u16 *rows, u16 *cols);
 
 // rng.c
 
@@ -64,15 +64,15 @@ typedef u8 Direction;
 
 typedef struct {
 	u32 pipe_count;
-	u32 rows;
-	u32 cols;
+	u16 rows;
+	u16 cols;
 	Rng *rng;
-	u32 *xs;
-	u32 *ys;
+	u16 *xs;
+	u16 *ys;
 	Direction *directions;
 	Direction *old_directions;
 	char (*display)[3];
 } App;
 
-App App_Create(u32 pipe_count, u32 rows, u32 cols, Rng *rng);
+App App_Create(u32 pipe_count, u16 rows, u16 cols, Rng *rng);
 void App_Update(App *app);

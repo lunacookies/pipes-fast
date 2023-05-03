@@ -36,8 +36,8 @@ main(s32 argument_count, const char **arguments)
 	HideCursor();
 	write(STDOUT_FILENO, "\x1b[2J", 4);
 
-	u32 rows = 0;
-	u32 cols = 0;
+	u16 rows = 0;
+	u16 cols = 0;
 	GetWindowSize(&rows, &cols);
 
 	Rng rng = Rng_CreateWithSystemEntropy();
