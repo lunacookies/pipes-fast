@@ -18,7 +18,7 @@ bench(void)
 		u64 end_ns = clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW);
 
 		total_ns += end_ns - start_ns;
-		frame_count += 10000;
+		frame_count += 100;
 	}
 
 	printf("%llu micros / frame\n", total_ns / frame_count / 1000);
