@@ -85,7 +85,7 @@ App_Update(App *app)
 
 	usize i = 0;
 
-	for (; i < (pipe_count % 16); i++) {
+	for (; i < (pipe_count % 32); i++) {
 		Direction direction = directions[i];
 
 		s8 dx = x_deltas[direction];
@@ -128,57 +128,97 @@ App_Update(App *app)
 	const int8x16_t x_deltas_v = {0, 1, 0, -1};
 	const int8x16_t y_deltas_v = {-1, 0, 1, 0};
 
-	for (; i < pipe_count; i += 16) {
-		uint8x16_t direction = vld1q_u8(directions + i);
+	for (; i < pipe_count; i += 32) {
+		uint8x16_t direction0 = vld1q_u8(directions + i);
+		uint8x16_t direction1 = vld1q_u8(directions + i + 16);
 
-		uint8x16_t x = vld1q_u8(xs + i);
+		uint8x16_t x0 = vld1q_u8(xs + i);
+		uint8x16_t x1 = vld1q_u8(xs + i + 16);
 
-		uint8x16_t y = vld1q_u8(ys + i);
+		uint8x16_t y0 = vld1q_u8(ys + i);
+		uint8x16_t y1 = vld1q_u8(ys + i + 16);
 
-		x += vqtbl1q_u8(x_deltas_v, direction);
-		y += vqtbl1q_u8(y_deltas_v, direction);
+		x0 += vqtbl1q_u8(x_deltas_v, direction0);
+		x1 += vqtbl1q_u8(x_deltas_v, direction1);
+		y0 += vqtbl1q_u8(y_deltas_v, direction0);
+		y1 += vqtbl1q_u8(y_deltas_v, direction1);
 
-		vst1q_u8(xs + i, x);
-		vst1q_u8(ys + i, y);
+		vst1q_u8(xs + i, x0);
+		vst1q_u8(xs + i + 16, x1);
+		vst1q_u8(ys + i, y0);
+		vst1q_u8(ys + i + 16, y1);
 
 		uint64x2_t random_big;
 		random_big[0] = Rng_Next(&rng);
 		random_big[1] = Rng_Next(&rng);
-		uint8x16_t random = random_big;
+		uint8x16_t random0 = random_big;
+		random_big[0] = Rng_Next(&rng);
+		random_big[1] = Rng_Next(&rng);
+		uint8x16_t random1 = random_big;
 
 		// either 0 or 1
-		uint8x16_t should_apply = random & 1;
+		uint8x16_t should_apply0 = random0 & 1;
+		uint8x16_t should_apply1 = random1 & 1;
 
 		// either -1 or 1
-		uint8x16_t rotation = (random & 2) - 1;
+		uint8x16_t rotation0 = (random0 & 2) - 1;
+		uint8x16_t rotation1 = (random1 & 2) - 1;
 
-		uint8x16_t old_direction = direction;
-		vst1q_u8(old_directions + i, old_direction);
+		uint8x16_t old_direction0 = direction0;
+		uint8x16_t old_direction1 = direction1;
+		vst1q_u8(old_directions + i, old_direction0);
+		vst1q_u8(old_directions + i + 16, old_direction1);
 
-		direction = (direction + rotation * should_apply) & 3;
-		vst1q_u8(directions + i, direction);
+		direction0 = (direction0 + rotation0 * should_apply0) & 3;
+		direction1 = (direction1 + rotation1 * should_apply1) & 3;
+		vst1q_u8(directions + i, direction0);
+		vst1q_u8(directions + i + 16, direction1);
 
-		uint8x16_t at_edge = x < 0 | x >= cols | y < 0 | y >= rows;
+		uint8x16_t at_edge0 = x0 < 0 | x0 >= cols | y0 < 0 | y0 >= rows;
+		uint8x16_t at_edge1 = x1 < 0 | x1 >= cols | y1 < 0 | y1 >= rows;
+
 		for (usize j = 0; j < 16; j++) {
-			if (at_edge[j]) {
-				u8 coord = random[j];
+			if (at_edge0[j]) {
+				u8 coord = random0[j];
 				u8 new_x[4] = {coord % cols, 0, coord % cols,
 				               cols - 1};
 				u8 new_y[4] = {rows - 1, coord % rows, 0,
 				               coord % rows};
 
-				direction[j] = (random[j] >> 2) & 3;
-				old_direction[j] = direction[j];
-				xs[i + j] = new_x[direction[j]];
-				ys[i + j] = new_y[direction[j]];
-				directions[i + j] = direction[j];
-				old_directions[i + j] = direction[j];
+				direction0[j] = (random0[j] >> 2) & 3;
+				old_direction0[j] = direction0[j];
+				xs[i + j] = new_x[direction0[j]];
+				ys[i + j] = new_y[direction0[j]];
+				directions[i + j] = direction0[j];
+				old_directions[i + j] = direction0[j];
+			}
+		}
+
+		for (usize j = 0; j < 16; j++) {
+			if (at_edge1[j]) {
+				u8 coord = random1[j];
+				u8 new_x[4] = {coord % cols, 0, coord % cols,
+				               cols - 1};
+				u8 new_y[4] = {rows - 1, coord % rows, 0,
+				               coord % rows};
+
+				direction1[j] = (random1[j] >> 2) & 3;
+				old_direction1[j] = direction1[j];
+				xs[i + j + 16] = new_x[direction1[j]];
+				ys[i + j + 16] = new_y[direction1[j]];
+				directions[i + j + 16] = direction1[j];
+				old_directions[i + j + 16] = direction1[j];
 			}
 		}
 
 		for (usize j = 0; j < 16; j++) {
 			memcpy(display[i + j],
-			       pipes[old_direction[j] << 2 | direction[j]],
+			       pipes[old_direction0[j] << 2 | direction0[j]],
+			       sizeof pipes[0]);
+		}
+		for (usize j = 0; j < 16; j++) {
+			memcpy(display[i + j + 16],
+			       pipes[old_direction1[j] << 2 | direction1[j]],
 			       sizeof pipes[0]);
 		}
 	}
