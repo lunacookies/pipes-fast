@@ -81,6 +81,8 @@ App_Update(App *app)
 	Direction *old_directions = app->old_directions;
 	char(*display)[3] = app->display;
 
+	Rng rng = *app->rng;
+
 	for (usize i = 0; i < pipe_count; i++) {
 		Direction direction = directions[i];
 
@@ -91,7 +93,7 @@ App_Update(App *app)
 		xs[i] = x;
 		ys[i] = y;
 
-		u32 random = Rng_Next(app->rng);
+		u32 random = Rng_Next(&rng);
 
 		// either 0 or 1
 		s32 should_apply = random & 1;
@@ -122,4 +124,6 @@ App_Update(App *app)
 		usize index = old_direction << 2 | direction;
 		memcpy(display[i], pipes[index], sizeof pipes[0]);
 	}
+
+	*app->rng = rng;
 }
