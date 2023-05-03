@@ -94,7 +94,7 @@ App_Update(App *app)
 		u32 random = Rng_Next(app->rng);
 
 		// either 0 or 1
-		s32 should_apply = (random & 1) == 0;
+		s32 should_apply = random & 1;
 
 		// either -1 or 1
 		s32 rotation = (random & 2) - 1;
