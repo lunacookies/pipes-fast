@@ -64,15 +64,15 @@ typedef u8 Direction;
 
 typedef struct {
 	u32 pipe_count;
-	u16 rows;
-	u16 cols;
+	u8 rows;
+	u8 cols;
 	Rng *rng;
-	u16 *xs;
-	u16 *ys;
+	u8 *xs;
+	u8 *ys;
 	Direction *directions;
 	Direction *old_directions;
 	char (*display)[3];
 } App;
 
-App App_Create(u32 pipe_count, u16 rows, u16 cols, Rng *rng);
+App App_Create(u32 pipe_count, u8 rows, u8 cols, Rng *rng);
 void App_Update(App *app);

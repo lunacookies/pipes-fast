@@ -22,11 +22,11 @@ static const char pipes[16][3] = {
         [Direction_Left << 2 | Direction_Left] = "━",
 };
 
-static const s16 x_deltas[4] = {0, 1, 0, -1};
-static const s16 y_deltas[4] = {-1, 0, 1, 0};
+static const s8 x_deltas[4] = {0, 1, 0, -1};
+static const s8 y_deltas[4] = {-1, 0, 1, 0};
 
 App
-App_Create(u32 pipe_count, u16 rows, u16 cols, Rng *rng)
+App_Create(u32 pipe_count, u8 rows, u8 cols, Rng *rng)
 {
 	App app = {.pipe_count = pipe_count,
 	           .rows = rows,
@@ -73,10 +73,10 @@ void
 App_Update(App *app)
 {
 	u32 pipe_count = app->pipe_count;
-	u16 rows = app->rows;
-	u16 cols = app->cols;
-	u16 *xs = app->xs;
-	u16 *ys = app->ys;
+	u8 rows = app->rows;
+	u8 cols = app->cols;
+	u8 *xs = app->xs;
+	u8 *ys = app->ys;
 	Direction *directions = app->directions;
 	Direction *old_directions = app->old_directions;
 	char(*display)[3] = app->display;
@@ -88,20 +88,20 @@ App_Update(App *app)
 	for (; i < (pipe_count % 4); i++) {
 		Direction direction = directions[i];
 
-		s16 dx = x_deltas[direction];
-		s16 dy = y_deltas[direction];
-		u16 x = (s16)xs[i] + dx;
-		u16 y = (s16)ys[i] + dy;
+		s8 dx = x_deltas[direction];
+		s8 dy = y_deltas[direction];
+		u8 x = (s8)xs[i] + dx;
+		u8 y = (s8)ys[i] + dy;
 		xs[i] = x;
 		ys[i] = y;
 
 		u32 random = Rng_Next(&rng);
 
 		// either 0 or 1
-		s16 should_apply = random & 1;
+		s8 should_apply = random & 1;
 
 		// either -1 or 1
-		s16 rotation = (random & 2) - 1;
+		s8 rotation = (random & 2) - 1;
 
 		Direction old_direction = direction;
 		old_directions[i] = old_direction;
@@ -109,11 +109,9 @@ App_Update(App *app)
 		directions[i] = direction;
 
 		if (x < 0 | x >= cols | y < 0 | y >= rows) {
-			u16 coord = (u16)(random >> 8);
-			u16 new_x[4] = {coord % cols, 0, coord % cols,
-			                cols - 1};
-			u16 new_y[4] = {rows - 1, coord % rows, 0,
-			                coord % rows};
+			u8 coord = (u8)(random >> 8);
+			u8 new_x[4] = {coord % cols, 0, coord % cols, cols - 1};
+			u8 new_y[4] = {rows - 1, coord % rows, 0, coord % rows};
 
 			direction = (random >> 2) & 3;
 			old_direction = direction;
@@ -131,11 +129,11 @@ App_Update(App *app)
 		Direction direction[8];
 		memcpy(direction, directions + i, sizeof(Direction) * 8);
 
-		u16 x[8];
-		memcpy(x, xs + i, sizeof(u16) * 8);
+		u8 x[8];
+		memcpy(x, xs + i, sizeof(u8) * 8);
 
-		u16 y[8];
-		memcpy(y, ys + i, sizeof(u16) * 8);
+		u8 y[8];
+		memcpy(y, ys + i, sizeof(u8) * 8);
 
 		x[0] += x_deltas[direction[0]];
 		x[1] += x_deltas[direction[1]];
@@ -155,17 +153,15 @@ App_Update(App *app)
 		y[6] += y_deltas[direction[6]];
 		y[7] += y_deltas[direction[7]];
 
-		memcpy(xs + i, x, sizeof(u16) * 8);
-		memcpy(ys + i, y, sizeof(u16) * 8);
+		memcpy(xs + i, x, sizeof(u8) * 8);
+		memcpy(ys + i, y, sizeof(u8) * 8);
 
-		u64 random_big0 = Rng_Next(&rng);
-		u64 random_big1 = Rng_Next(&rng);
-		u16 random[8];
-		memcpy(random, &random_big0, sizeof(u64));
-		memcpy(random + 2, &random_big1, sizeof(u64));
+		u64 random_big = Rng_Next(&rng);
+		u8 random[8];
+		memcpy(random, &random_big, sizeof(u64));
 
 		// either 0 or 1
-		s16 should_apply[8];
+		s8 should_apply[8];
 		should_apply[0] = random[0] & 1;
 		should_apply[1] = random[1] & 1;
 		should_apply[2] = random[2] & 1;
@@ -176,7 +172,7 @@ App_Update(App *app)
 		should_apply[7] = random[7] & 1;
 
 		// either -1 or 1
-		s16 rotation[8];
+		s8 rotation[8];
 		rotation[0] = (random[0] & 2) - 1;
 		rotation[1] = (random[1] & 2) - 1;
 		rotation[2] = (random[2] & 2) - 1;
@@ -212,11 +208,11 @@ App_Update(App *app)
 
 		for (usize j = 0; j < 8; j++) {
 			if (x[j] < 0 | x[j] >= cols | y[j] < 0 | y[j] >= rows) {
-				u16 coord = (u16)(random[j] >> 8);
-				u16 new_x[4] = {coord % cols, 0, coord % cols,
-				                cols - 1};
-				u16 new_y[4] = {rows - 1, coord % rows, 0,
-				                coord % rows};
+				u8 coord = random[j];
+				u8 new_x[4] = {coord % cols, 0, coord % cols,
+				               cols - 1};
+				u8 new_y[4] = {rows - 1, coord % rows, 0,
+				               coord % rows};
 
 				direction[j] = (random[j] >> 2) & 3;
 				old_direction[j] = direction[j];
