@@ -54,12 +54,13 @@ void OutputBuffer_PushBytes(OutputBuffer *b, const char *bytes, usize count);
 
 // app.c
 
-typedef enum {
+enum {
 	Direction_Up,
 	Direction_Right,
 	Direction_Down,
 	Direction_Left,
-} Direction;
+};
+typedef u8 Direction;
 
 typedef struct {
 	u32 pipe_count;
