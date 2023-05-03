@@ -39,12 +39,11 @@ main(s32 argument_count, const char **arguments)
 	u16 rows = 0;
 	u16 cols = 0;
 	GetWindowSize(&rows, &cols);
-
-	if (rows > 255 || cols > 255)
-		return 1;
+	rows = rows > 255 ? 255 : rows;
+	cols = cols > 255 ? 255 : cols;
 
 	Rng rng = Rng_CreateWithSystemEntropy();
-	App app = App_Create(10, (u8)rows, (u8)cols, &rng);
+	App app = App_Create(16, (u8)rows, (u8)cols, &rng);
 	OutputBuffer buf = OutputBuffer_Create(rows * cols);
 
 	u64 second_ns = 1000000000;

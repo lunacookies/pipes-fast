@@ -85,7 +85,7 @@ App_Update(App *app)
 
 	usize i = 0;
 
-	for (; i < (pipe_count % 4); i++) {
+	for (; i < (pipe_count % 16); i++) {
 		Direction direction = directions[i];
 
 		s8 dx = x_deltas[direction];
@@ -125,89 +125,42 @@ App_Update(App *app)
 		memcpy(display[i], pipes[index], sizeof pipes[0]);
 	}
 
-	for (; i < pipe_count; i += 8) {
-		Direction direction[8];
-		memcpy(direction, directions + i, sizeof(Direction) * 8);
+	const int8x16_t x_deltas_v = {0, 1, 0, -1};
+	const int8x16_t y_deltas_v = {-1, 0, 1, 0};
 
-		u8 x[8];
-		memcpy(x, xs + i, sizeof(u8) * 8);
+	for (; i < pipe_count; i += 16) {
+		uint8x16_t direction = vld1q_u8(directions + i);
 
-		u8 y[8];
-		memcpy(y, ys + i, sizeof(u8) * 8);
+		uint8x16_t x = vld1q_u8(xs + i);
 
-		x[0] += x_deltas[direction[0]];
-		x[1] += x_deltas[direction[1]];
-		x[2] += x_deltas[direction[2]];
-		x[3] += x_deltas[direction[3]];
-		x[4] += x_deltas[direction[4]];
-		x[5] += x_deltas[direction[5]];
-		x[6] += x_deltas[direction[6]];
-		x[7] += x_deltas[direction[7]];
+		uint8x16_t y = vld1q_u8(ys + i);
 
-		y[0] += y_deltas[direction[0]];
-		y[1] += y_deltas[direction[1]];
-		y[2] += y_deltas[direction[2]];
-		y[3] += y_deltas[direction[3]];
-		y[4] += y_deltas[direction[4]];
-		y[5] += y_deltas[direction[5]];
-		y[6] += y_deltas[direction[6]];
-		y[7] += y_deltas[direction[7]];
+		x += vqtbl1q_u8(x_deltas_v, direction);
+		y += vqtbl1q_u8(y_deltas_v, direction);
 
-		memcpy(xs + i, x, sizeof(u8) * 8);
-		memcpy(ys + i, y, sizeof(u8) * 8);
+		vst1q_u8(xs + i, x);
+		vst1q_u8(ys + i, y);
 
-		u64 random_big = Rng_Next(&rng);
-		u8 random[8];
-		memcpy(random, &random_big, sizeof(u64));
+		uint64x2_t random_big;
+		random_big[0] = Rng_Next(&rng);
+		random_big[1] = Rng_Next(&rng);
+		uint8x16_t random = random_big;
 
 		// either 0 or 1
-		s8 should_apply[8];
-		should_apply[0] = random[0] & 1;
-		should_apply[1] = random[1] & 1;
-		should_apply[2] = random[2] & 1;
-		should_apply[3] = random[3] & 1;
-		should_apply[4] = random[4] & 1;
-		should_apply[5] = random[5] & 1;
-		should_apply[6] = random[6] & 1;
-		should_apply[7] = random[7] & 1;
+		uint8x16_t should_apply = random & 1;
 
 		// either -1 or 1
-		s8 rotation[8];
-		rotation[0] = (random[0] & 2) - 1;
-		rotation[1] = (random[1] & 2) - 1;
-		rotation[2] = (random[2] & 2) - 1;
-		rotation[3] = (random[3] & 2) - 1;
-		rotation[4] = (random[4] & 2) - 1;
-		rotation[5] = (random[5] & 2) - 1;
-		rotation[6] = (random[6] & 2) - 1;
-		rotation[7] = (random[7] & 2) - 1;
+		uint8x16_t rotation = (random & 2) - 1;
 
-		Direction old_direction[8];
-		memcpy(old_direction, direction, sizeof(Direction) * 8);
-		memcpy(old_directions + i, old_direction,
-		       sizeof(Direction) * 8);
+		uint8x16_t old_direction = direction;
+		vst1q_u8(old_directions + i, old_direction);
 
-		direction[0] =
-		        (direction[0] + rotation[0] * should_apply[0]) & 3;
-		direction[1] =
-		        (direction[1] + rotation[1] * should_apply[1]) & 3;
-		direction[2] =
-		        (direction[2] + rotation[2] * should_apply[2]) & 3;
-		direction[3] =
-		        (direction[3] + rotation[3] * should_apply[3]) & 3;
-		direction[4] =
-		        (direction[4] + rotation[4] * should_apply[4]) & 3;
-		direction[5] =
-		        (direction[5] + rotation[5] * should_apply[5]) & 3;
-		direction[6] =
-		        (direction[6] + rotation[6] * should_apply[6]) & 3;
-		direction[7] =
-		        (direction[7] + rotation[7] * should_apply[7]) & 3;
+		direction = (direction + rotation * should_apply) & 3;
+		vst1q_u8(directions + i, direction);
 
-		memcpy(directions + i, direction, sizeof(Direction) * 4);
-
-		for (usize j = 0; j < 8; j++) {
-			if (x[j] < 0 | x[j] >= cols | y[j] < 0 | y[j] >= rows) {
+		uint8x16_t at_edge = x < 0 | x >= cols | y < 0 | y >= rows;
+		for (usize j = 0; j < 16; j++) {
+			if (at_edge[j]) {
 				u8 coord = random[j];
 				u8 new_x[4] = {coord % cols, 0, coord % cols,
 				               cols - 1};
@@ -223,18 +176,11 @@ App_Update(App *app)
 			}
 		}
 
-		memcpy(display[i + 0],
-		       pipes[old_direction[0] << 2 | direction[0]],
-		       sizeof pipes[0]);
-		memcpy(display[i + 1],
-		       pipes[old_direction[1] << 2 | direction[1]],
-		       sizeof pipes[0]);
-		memcpy(display[i + 2],
-		       pipes[old_direction[2] << 2 | direction[2]],
-		       sizeof pipes[0]);
-		memcpy(display[i + 3],
-		       pipes[old_direction[3] << 2 | direction[3]],
-		       sizeof pipes[0]);
+		for (usize j = 0; j < 16; j++) {
+			memcpy(display[i + j],
+			       pipes[old_direction[j] << 2 | direction[j]],
+			       sizeof pipes[0]);
+		}
 	}
 
 	*app->rng = rng;

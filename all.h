@@ -1,3 +1,4 @@
+#include <arm_neon.h>
 #include <assert.h>
 #include <fcntl.h>
 #include <stdarg.h>
