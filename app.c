@@ -283,24 +283,25 @@ App_Update(App *app)
 			}
 		}
 
+		uint8x16_t indexes0 = old_direction0 << 2 | direction0;
+		uint8x16_t indexes1 = old_direction1 << 2 | direction1;
+		uint8x16_t indexes2 = old_direction2 << 2 | direction2;
+		uint8x16_t indexes3 = old_direction3 << 2 | direction3;
+
 		for (usize j = 0; j < 16; j++) {
-			memcpy(display[i + j],
-			       pipes[old_direction0[j] << 2 | direction0[j]],
+			memcpy(display[i + j], pipes[indexes0[j]],
 			       sizeof pipes[0]);
 		}
 		for (usize j = 0; j < 16; j++) {
-			memcpy(display[i + j + 16],
-			       pipes[old_direction1[j] << 2 | direction1[j]],
+			memcpy(display[i + j + 16], pipes[indexes1[j]],
 			       sizeof pipes[0]);
 		}
 		for (usize j = 0; j < 16; j++) {
-			memcpy(display[i + j + 32],
-			       pipes[old_direction2[j] << 2 | direction2[j]],
+			memcpy(display[i + j + 32], pipes[indexes2[j]],
 			       sizeof pipes[0]);
 		}
 		for (usize j = 0; j < 16; j++) {
-			memcpy(display[i + j + 48],
-			       pipes[old_direction3[j] << 2 | direction3[j]],
+			memcpy(display[i + j + 48], pipes[indexes3[j]],
 			       sizeof pipes[0]);
 		}
 	}
