@@ -85,7 +85,7 @@ App_Update(App *app)
 
 	usize i = 0;
 
-	for (; i < (pipe_count % 32); i++) {
+	for (; i < (pipe_count % 64); i++) {
 		Direction direction = directions[i];
 
 		s8 dx = x_deltas[direction];
@@ -128,25 +128,41 @@ App_Update(App *app)
 	const int8x16_t x_deltas_v = {0, 1, 0, -1};
 	const int8x16_t y_deltas_v = {-1, 0, 1, 0};
 
-	for (; i < pipe_count; i += 32) {
+	for (; i < pipe_count; i += 64) {
 		uint8x16_t direction0 = vld1q_u8(directions + i);
 		uint8x16_t direction1 = vld1q_u8(directions + i + 16);
+		uint8x16_t direction2 = vld1q_u8(directions + i + 32);
+		uint8x16_t direction3 = vld1q_u8(directions + i + 48);
 
 		uint8x16_t x0 = vld1q_u8(xs + i);
 		uint8x16_t x1 = vld1q_u8(xs + i + 16);
+		uint8x16_t x2 = vld1q_u8(xs + i + 32);
+		uint8x16_t x3 = vld1q_u8(xs + i + 48);
 
 		uint8x16_t y0 = vld1q_u8(ys + i);
 		uint8x16_t y1 = vld1q_u8(ys + i + 16);
+		uint8x16_t y2 = vld1q_u8(ys + i + 32);
+		uint8x16_t y3 = vld1q_u8(ys + i + 48);
 
 		x0 += vqtbl1q_u8(x_deltas_v, direction0);
 		x1 += vqtbl1q_u8(x_deltas_v, direction1);
+		x2 += vqtbl1q_u8(x_deltas_v, direction2);
+		x3 += vqtbl1q_u8(x_deltas_v, direction3);
+
 		y0 += vqtbl1q_u8(y_deltas_v, direction0);
 		y1 += vqtbl1q_u8(y_deltas_v, direction1);
+		y2 += vqtbl1q_u8(y_deltas_v, direction2);
+		y3 += vqtbl1q_u8(y_deltas_v, direction3);
 
 		vst1q_u8(xs + i, x0);
 		vst1q_u8(xs + i + 16, x1);
+		vst1q_u8(xs + i + 32, x2);
+		vst1q_u8(xs + i + 48, x3);
+
 		vst1q_u8(ys + i, y0);
 		vst1q_u8(ys + i + 16, y1);
+		vst1q_u8(ys + i + 32, y2);
+		vst1q_u8(ys + i + 48, y3);
 
 		uint64x2_t random_big;
 		random_big[0] = Rng_Next(&rng);
@@ -155,27 +171,49 @@ App_Update(App *app)
 		random_big[0] = Rng_Next(&rng);
 		random_big[1] = Rng_Next(&rng);
 		uint8x16_t random1 = random_big;
+		random_big[0] = Rng_Next(&rng);
+		random_big[1] = Rng_Next(&rng);
+		uint8x16_t random2 = random_big;
+		random_big[0] = Rng_Next(&rng);
+		random_big[1] = Rng_Next(&rng);
+		uint8x16_t random3 = random_big;
 
 		// either 0 or 1
 		uint8x16_t should_apply0 = random0 & 1;
 		uint8x16_t should_apply1 = random1 & 1;
+		uint8x16_t should_apply2 = random2 & 1;
+		uint8x16_t should_apply3 = random3 & 1;
 
 		// either -1 or 1
 		uint8x16_t rotation0 = (random0 & 2) - 1;
 		uint8x16_t rotation1 = (random1 & 2) - 1;
+		uint8x16_t rotation2 = (random2 & 2) - 1;
+		uint8x16_t rotation3 = (random3 & 2) - 1;
 
 		uint8x16_t old_direction0 = direction0;
 		uint8x16_t old_direction1 = direction1;
+		uint8x16_t old_direction2 = direction2;
+		uint8x16_t old_direction3 = direction3;
+
 		vst1q_u8(old_directions + i, old_direction0);
 		vst1q_u8(old_directions + i + 16, old_direction1);
+		vst1q_u8(old_directions + i + 32, old_direction2);
+		vst1q_u8(old_directions + i + 48, old_direction3);
 
 		direction0 = (direction0 + rotation0 * should_apply0) & 3;
 		direction1 = (direction1 + rotation1 * should_apply1) & 3;
+		direction2 = (direction2 + rotation2 * should_apply2) & 3;
+		direction3 = (direction3 + rotation3 * should_apply3) & 3;
+
 		vst1q_u8(directions + i, direction0);
 		vst1q_u8(directions + i + 16, direction1);
+		vst1q_u8(directions + i + 32, direction2);
+		vst1q_u8(directions + i + 48, direction3);
 
 		uint8x16_t at_edge0 = x0 < 0 | x0 >= cols | y0 < 0 | y0 >= rows;
 		uint8x16_t at_edge1 = x1 < 0 | x1 >= cols | y1 < 0 | y1 >= rows;
+		uint8x16_t at_edge2 = x2 < 0 | x2 >= cols | y2 < 0 | y2 >= rows;
+		uint8x16_t at_edge3 = x3 < 0 | x3 >= cols | y3 < 0 | y3 >= rows;
 
 		for (usize j = 0; j < 16; j++) {
 			if (at_edge0[j]) {
@@ -212,6 +250,40 @@ App_Update(App *app)
 		}
 
 		for (usize j = 0; j < 16; j++) {
+			if (at_edge2[j]) {
+				u8 coord = random2[j];
+				u8 new_x[4] = {coord % cols, 0, coord % cols,
+				               cols - 1};
+				u8 new_y[4] = {rows - 1, coord % rows, 0,
+				               coord % rows};
+
+				direction2[j] = (random2[j] >> 2) & 3;
+				old_direction2[j] = direction2[j];
+				xs[i + j + 32] = new_x[direction2[j]];
+				ys[i + j + 32] = new_y[direction2[j]];
+				directions[i + j + 32] = direction2[j];
+				old_directions[i + j + 32] = direction2[j];
+			}
+		}
+
+		for (usize j = 0; j < 16; j++) {
+			if (at_edge3[j]) {
+				u8 coord = random3[j];
+				u8 new_x[4] = {coord % cols, 0, coord % cols,
+				               cols - 1};
+				u8 new_y[4] = {rows - 1, coord % rows, 0,
+				               coord % rows};
+
+				direction3[j] = (random3[j] >> 2) & 3;
+				old_direction3[j] = direction3[j];
+				xs[i + j + 48] = new_x[direction3[j]];
+				ys[i + j + 48] = new_y[direction3[j]];
+				directions[i + j + 48] = direction3[j];
+				old_directions[i + j + 48] = direction3[j];
+			}
+		}
+
+		for (usize j = 0; j < 16; j++) {
 			memcpy(display[i + j],
 			       pipes[old_direction0[j] << 2 | direction0[j]],
 			       sizeof pipes[0]);
@@ -219,6 +291,16 @@ App_Update(App *app)
 		for (usize j = 0; j < 16; j++) {
 			memcpy(display[i + j + 16],
 			       pipes[old_direction1[j] << 2 | direction1[j]],
+			       sizeof pipes[0]);
+		}
+		for (usize j = 0; j < 16; j++) {
+			memcpy(display[i + j + 32],
+			       pipes[old_direction2[j] << 2 | direction2[j]],
+			       sizeof pipes[0]);
+		}
+		for (usize j = 0; j < 16; j++) {
+			memcpy(display[i + j + 48],
+			       pipes[old_direction3[j] << 2 | direction3[j]],
 			       sizeof pipes[0]);
 		}
 	}
